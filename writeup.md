@@ -1,6 +1,4 @@
-## Writeup Template
-
-### You can use this file as a template for your writeup if you want to submit it as a markdown file, but feel free to use some other method and submit a pdf if you prefer.
+## Greg Yeutter
 
 ---
 
@@ -19,7 +17,12 @@ The goals / steps of this project are the following:
 
 [//]: # (Image References)
 
-[image1]: ./examples/undistort_output.png "Undistorted"
+[undist1]: ./output_images/out_calibration2.jpg "Undistorted 1"
+[undist2]: ./output_images/out_calibration10.jpg "Undistorted 2"
+[undist3]: ./output_images/out_calibration16.jpg "Undistorted 3"
+
+[undisttest]: ./output_images/undist_test1.jpg "Undistorted Test"
+
 [image2]: ./test_images/test1.jpg "Road Transformed"
 [image3]: ./examples/binary_combo_example.jpg "Binary Example"
 [image4]: ./examples/warped_straight_lines.jpg "Warp Example"
@@ -43,20 +46,35 @@ You're reading it!
 
 #### 1. Briefly state how you computed the camera matrix and distortion coefficients. Provide an example of a distortion corrected calibration image.
 
-The code for this step is contained in the first code cell of the IPython notebook located in "./examples/example.ipynb" (or in lines # through # of the file called `some_file.py`).  
+The code for this step is contained under `main.py` in the function `calibrate_chessboard()`, with additional functions `grayscale()` and `undistort()`.  
+I start by preparing "object points", which will be the (x, y, z) coordinates of the chessboard corners in the world. Here I am assuming the chessboard is fixed on the (x, y) plane at z=0, such that the object points are the same for each calibration image. Thus, `objp` is just a replicated array of coordinates, and `objpoints` will be appended with a copy of it every time I successfully detect all chessboard corners in a test image. `imgpoints` will be appended with the (x, y) pixel position of each of the corners in the image plane with each successful chessboard detection.  
 
-I start by preparing "object points", which will be the (x, y, z) coordinates of the chessboard corners in the world. Here I am assuming the chessboard is fixed on the (x, y) plane at z=0, such that the object points are the same for each calibration image.  Thus, `objp` is just a replicated array of coordinates, and `objpoints` will be appended with a copy of it every time I successfully detect all chessboard corners in a test image.  `imgpoints` will be appended with the (x, y) pixel position of each of the corners in the image plane with each successful chessboard detection.  
+Under `# Process each calibration image`, each calibration image is imported and converted to grayscale (with `grayscale()`. If corners are detected wirh `cv2.findChessboardCorners()`, the points are added to the objpoints and imgpoints arrays as described in the previous paragraph.
 
-I then used the output `objpoints` and `imgpoints` to compute the camera calibration and distortion coefficients using the `cv2.calibrateCamera()` function.  I applied this distortion correction to the test image using the `cv2.undistort()` function and obtained this result: 
+I then call the function `undistort()`. Here, the output `objpoints` and `imgpoints` are to compute the camera calibration and distortion coefficients using the `cv2.calibrateCamera()` function.  I apply this distortion correction to each test image using the `cv2.undistort()` function and obtain these results: 
 
-![alt text][image1]
+![alt text][undist1]
+![alt text][undist2]
+![alt text][undist3]
+
+Objectively, most of the corrections appear minor but significant.
 
 ### Pipeline (single images)
 
+The pipeline is executed as follows:
+* Calibrate the lens using chessboard images
+
+Then, for each image:
+* Correct for distortion
+*
+*
+
+
 #### 1. Provide an example of a distortion-corrected image.
 
-To demonstrate this step, I will describe how I apply the distortion correction to one of the test images like this one:
-![alt text][image2]
+The `undistort()` function is applied to the test image, using the calibration data captured in `calibrate_chessboard()`. An example of this calibration is:
+
+![alt text][undisttest]
 
 #### 2. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
 

@@ -4,6 +4,9 @@ import glob
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
+# Parameters
+k_size = 3 # Kernel size
+
 camera_cal_dir = './camera_cal'
 test_img_dir = './test_images'
 out_img_dir = './output_images'
@@ -18,12 +21,21 @@ imgpoints = [] # 2D points in image space
 
 def grayscale(img):
     """
-    Converts an image to grayscale
+    Converts a BGR image to grayscale
 
     img: The image in BGR color format
     return The grayscale image
     """
     return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+def hls(img):
+    """
+    Converts a BGR image to HLS
+
+    img: The image in BGR color format
+    return The HLS image
+    """
+    return cv2.cvtColor(img, cv2.COLOR_HLS2GRAY)
 
 def undistort(img, gray):
     """
@@ -61,8 +73,11 @@ def perspective_transform(img, corners, nx=9, ny=6, offset=100):
     # Get the transform matrix
     M = cv2.getPerspectiveTransform(src, dst)
 
-    # Warp the image to a top-down view and return
-    return cv2.warpPerspective(img, M, img_size)
+    # Warp the image to a top-down view
+    warped = cv2.warpPerspective(img, M, img_size)
+
+    # Return the warped image and transform matrix
+    return warped, M
 
 """
 2. Threshold Calculations
@@ -76,6 +91,7 @@ def dir_threshold(gray, sobel_kernel=3, thresh=(0, np.pi/2)):
     gray: The image to process, in grayscale
     sobel_kernel: The Sobel kernel size
     thres: The threshold to apply
+    return The layer mask
     """
     # Take the gradient in x and y separately
     sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=sobel_kernel)
@@ -103,6 +119,7 @@ def mag_thresh(gray, sobel_kernel=3, thresh=(0, 255)):
     gray: The image to process, in grayscale
     sobel_kernel: The Sobel kernel size
     thres: The threshold to apply
+    return The layer mask
     """
     # Take the gradient in x and y separately
     sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=sobel_kernel)
@@ -126,11 +143,13 @@ def mag_thresh(gray, sobel_kernel=3, thresh=(0, 255)):
 def abs_sobel_thresh(gray, orient='x', thresh=(0, 255), sobel_kernel=3):
     """
     Computes the absolute value of Sobel in the x or y direction
+    and applies a threshold as a layer mask
 
     gray: The image to process, in grayscale
     orient: The orientation, either 'x' or 'y'
     sobel_kernel: The Sobel kernel size
     thres: The threshold to apply
+    return The layer mask
     """
     # Take the derivative in x or y given orient = 'x' or 'y'
     sobel = cv2.Sobel(gray, cv2.CV_64F, orient == 'x', orient == 'y')
@@ -148,6 +167,27 @@ def abs_sobel_thresh(gray, orient='x', thresh=(0, 255), sobel_kernel=3):
 
     # 6) Return the mask
     return binary_output
+
+def saturation_thresh(img, thresh=(0, 255)):
+    """
+    Computes the threshold of the saturation of the image
+
+    img: The image to process, in BGR
+    thres: The threshold to apply
+    return The layer mask
+    """
+    # Convert the image to HLS format
+    hls = hls(img)
+
+    # Apply the threshold to the S channel
+    S = hls[:,:,2]
+
+    # Create a mask with the threshold applies
+    binary = np.zeros_like(S)
+    binary[(S > thresh[0]) & (S <= thresh[1])] = 1
+
+    # Return the mask
+    return binary
 
 """
 3. Data Processing
@@ -216,3 +256,63 @@ def calibrate_chessboard(xdim=9, ydim=6, drawCorners=0, saveFile=0):
 
 # For calibrateChessboard function demonstration, saves output with lines
 # calibrate_chessboard(drawCorners=1, saveFile=1) 
+
+def img_process_pipeline(fname, ksize=3, saveFile=0):
+    """
+    The pipeline for image processing
+
+    fname: The filename of the image to process
+    ksize: The kernel size
+    saveFile: Boolean: If true, saves the image at various steps along
+              the pipeline
+    return The processed image
+    """
+    # Get the image from the filename
+    img = mpimg.imread(fname)
+
+    # Convert the image to grayscale
+    gray = grayscale(img)
+
+    # Correct image distortion
+    undist = undistort(img, gray)
+    if saveFile:
+        f, (ax1, ax2) = plt.subplots(1, 2, figsize=(24, 9))
+        f.tight_layout()
+        ax1.imshow(img)
+        ax1.set_title('Original Image', fontsize=50)
+        ax2.imshow(undist)
+        ax2.set_title('Undistorted Image', fontsize=50)
+        plt.subplots_adjust(left=0., right=1, top=0.9, bottom=0.)
+        plt.savefig(out_img_dir + '/undist_' + fname.split('/')[-1])
+
+    # Apply each of the thresholding functions
+    gradx = abs_sobel_thresh(gray, orient='x', sobel_kernel=ksize, thresh=(20, 100))
+    grady = abs_sobel_thresh(gray, orient='y', sobel_kernel=ksize, thresh=(20, 100))
+    mag_binary = mag_thresh(gray, sobel_kernel=ksize, thresh=(30, 100))
+    dir_binary = dir_threshold(gray, sobel_kernel=ksize, thresh=(0.7, 1.3))
+
+    # Combine the thresholding results
+    combined = np.zeros_like(dir_binary)
+    combined[((gradx == 1) & (grady == 1)) | ((mag_binary == 1) & (dir_binary == 1))] = 1
+    if saveFile:
+        f, (ax1, ax2) = plt.subplots(1, 2, figsize=(24, 9))
+        f.tight_layout()
+        ax1.imshow(img)
+        ax1.set_title('Original Image', fontsize=50)
+        ax2.imshow(combined, cmap='gray')
+        ax2.set_title('Thresholded Grad. Dir.', fontsize=50)
+        plt.subplots_adjust(left=0., right=1, top=0.9, bottom=0.)
+        plt.savefig(out_img_dir + '/combined_' + fname.split('/')[-1])
+
+def main():
+    """
+    The main project pipeline
+    """
+    # Calibrate the camera lens using chessboard images
+    calibrate_chessboard()
+
+    # Correct a single image for distortion
+    fname = test_img_dir + "/test1.jpg"
+    img_process_pipeline(fname, ksize=k_size, saveFile=1)
+
+main()
