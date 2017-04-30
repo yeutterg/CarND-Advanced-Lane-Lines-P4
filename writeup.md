@@ -22,6 +22,7 @@ The goals / steps of this project are the following:
 [undist3]: ./output_images/out_calibration16.jpg "Undistorted 3"
 
 [undisttest]: ./output_images/undist_test1.jpg "Undistorted Test"
+[combinedtest]: ./output_images/combined_test1.jpg "Combined Test"
 
 [image2]: ./test_images/test1.jpg "Road Transformed"
 [image3]: ./examples/binary_combo_example.jpg "Binary Example"
@@ -37,10 +38,6 @@ The goals / steps of this project are the following:
 ---
 
 ### Writeup / README
-
-#### 1. Provide a Writeup / README that includes all the rubric points and how you addressed each one.  You can submit your writeup as markdown or pdf.  [Here](https://github.com/udacity/CarND-Advanced-Lane-Lines/blob/master/writeup_template.md) is a template writeup for this project you can use as a guide and a starting point.  
-
-You're reading it!
 
 ### Camera Calibration
 
@@ -78,9 +75,9 @@ The `undistort()` function is applied to the test image, using the calibration d
 
 #### 2. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
 
-I used a combination of color and gradient thresholds to generate a binary image (thresholding steps at lines # through # in `another_file.py`).  Here's an example of my output for this step.  (note: this is not actually from one of the test images)
+I used a combination of color and gradient thresholds to generate a binary image (thresholding steps after `# Combine the thresholding results` in `img_process_pipeline()`).  Here's an example of my output for this step:
 
-![alt text][image3]
+![alt text][combinedtest]
 
 #### 3. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.
 

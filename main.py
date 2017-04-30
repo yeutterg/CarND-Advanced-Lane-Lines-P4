@@ -35,7 +35,7 @@ def hls(img):
     img: The image in BGR color format
     return The HLS image
     """
-    return cv2.cvtColor(img, cv2.COLOR_HLS2GRAY)
+    return cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
 
 def undistort(img, gray):
     """
@@ -177,10 +177,10 @@ def saturation_thresh(img, thresh=(0, 255)):
     return The layer mask
     """
     # Convert the image to HLS format
-    hls = hls(img)
+    hlsimg = hls(img)
 
     # Apply the threshold to the S channel
-    S = hls[:,:,2]
+    S = hlsimg[:,:,2]
 
     # Create a mask with the threshold applies
     binary = np.zeros_like(S)
@@ -285,24 +285,32 @@ def img_process_pipeline(fname, ksize=3, saveFile=0):
         plt.subplots_adjust(left=0., right=1, top=0.9, bottom=0.)
         plt.savefig(out_img_dir + '/undist_' + fname.split('/')[-1])
 
+    # Get the grayscale of the undistorted image
+    gray = grayscale(undist)
+
     # Apply each of the thresholding functions
     gradx = abs_sobel_thresh(gray, orient='x', sobel_kernel=ksize, thresh=(20, 100))
     grady = abs_sobel_thresh(gray, orient='y', sobel_kernel=ksize, thresh=(20, 100))
     mag_binary = mag_thresh(gray, sobel_kernel=ksize, thresh=(30, 100))
     dir_binary = dir_threshold(gray, sobel_kernel=ksize, thresh=(0.7, 1.3))
+    sat_binary = saturation_thresh(undist, thresh=(200, 255))
 
     # Combine the thresholding results
     combined = np.zeros_like(dir_binary)
-    combined[((gradx == 1) & (grady == 1)) | ((mag_binary == 1) & (dir_binary == 1))] = 1
+    combined[((gradx == 1) & (grady == 1)) | ((mag_binary == 1) & (dir_binary == 1))| (sat_binary == 1)] = 1
     if saveFile:
         f, (ax1, ax2) = plt.subplots(1, 2, figsize=(24, 9))
         f.tight_layout()
-        ax1.imshow(img)
-        ax1.set_title('Original Image', fontsize=50)
+        ax1.imshow(undist)
+        ax1.set_title('Undistorted Image', fontsize=50)
         ax2.imshow(combined, cmap='gray')
         ax2.set_title('Thresholded Grad. Dir.', fontsize=50)
         plt.subplots_adjust(left=0., right=1, top=0.9, bottom=0.)
         plt.savefig(out_img_dir + '/combined_' + fname.split('/')[-1])
+
+    # Perspective transform (bird's eye view)
+    # TODO
+
 
 def main():
     """
