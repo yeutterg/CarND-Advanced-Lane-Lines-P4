@@ -8,6 +8,14 @@ camera_cal_dir = './camera_cal'
 test_img_dir = './test_images'
 out_img_dir = './output_images'
 
+# Calibration
+objpoints = [] # 3D points in real world space
+imgpoints = [] # 2D points in image space
+
+"""
+1. Image Transformations
+"""
+
 def grayscale(img):
     """
     Converts an image to grayscale
@@ -17,20 +25,135 @@ def grayscale(img):
     """
     return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-def undistort(img, gray, objpoints, imgpoints):
+def undistort(img, gray):
     """
     Undistorts a camera image
 
     img: The image in color
     gray: The image in grayscale
-    objpoints: Array of 3D points in real world space
-    imgpoints: Array of 2D Points in image space
     return The undistorted image
     """
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
     return cv2.undistort(img, mtx, dist, None, mtx)
 
-def calibrateChessboard(xdim=9, ydim=6, drawCorners=0, saveFile=0):
+def perspective_transform(img, corners, nx=9, ny=6, offset=100):
+    """
+    Transforms the perspective of the image
+
+    img: The image to transform
+    corners: The corners matrix
+    nx: The number of corners in the x direction
+    ny: The number of corners in the y direction
+    offset: The offset parameter
+    return The warped image
+    """
+    # Define the four source points
+    src = np.float32([corners[0], corners[nx-1], corners[-1], corners[-nx]])
+
+    # Get the image size
+    img_size = (img.shape[1], img.shape[0])
+
+    # Define the four destination points
+    dst = np.float32([[offset, offset], [img_size[0]-offset, offset],
+                    [img_size[0]-offset, img_size[1]-offset],
+                    [offset, img_size[1]-offset]])
+    
+    # Get the transform matrix
+    M = cv2.getPerspectiveTransform(src, dst)
+
+    # Warp the image to a top-down view and return
+    return cv2.warpPerspective(img, M, img_size)
+
+"""
+2. Threshold Calculations
+"""
+
+def dir_threshold(gray, sobel_kernel=3, thresh=(0, np.pi/2)):
+    """
+    Computes the direction of the gradient in both the x and y directions
+    and applies a threshold as a layer mask
+
+    gray: The image to process, in grayscale
+    sobel_kernel: The Sobel kernel size
+    thres: The threshold to apply
+    """
+    # Take the gradient in x and y separately
+    sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=sobel_kernel)
+    sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=sobel_kernel)
+
+    # Take the absolute value of the x and y gradients
+    abs_sobelx = np.absolute(sobelx)
+    abs_sobely = np.absolute(sobely)
+
+    # Use np.arctan2(abs_sobely, abs_sobelx) to calculate the direction of the gradient 
+    dir_grad = np.arctan2(abs_sobely, abs_sobelx)
+
+    # Create a binary mask where direction thresholds are met
+    binary_output = np.zeros_like(dir_grad)
+    binary_output[(dir_grad >= thresh[0]) & (dir_grad <= thresh[1])] = 1
+
+    # Return the mask
+    return binary_output
+
+def mag_thresh(gray, sobel_kernel=3, thresh=(0, 255)):
+    """
+    Computes the magnitude of the gradient and applies a threshold 
+    as a layer mask
+
+    gray: The image to process, in grayscale
+    sobel_kernel: The Sobel kernel size
+    thres: The threshold to apply
+    """
+    # Take the gradient in x and y separately
+    sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=sobel_kernel)
+    sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=sobel_kernel)
+
+    # Calculate the gradient magnitude
+    mag_sobel = np.sqrt(sobelx**2 + sobely**2)
+
+    # Scale to 8-bit (0 - 255) then convert to type = np.uint8
+    scale_factor = np.max(mag_sobel)/255 
+    mag_scaled = (mag_sobel/scale_factor).astype(np.uint8) 
+
+    # Create a mask of 1s where the scaled gradient magnitude 
+    # is > thresh_min and <= thresh_max
+    binary_output = np.zeros_like(mag_scaled)
+    binary_output[(mag_scaled >= thresh[0]) & (mag_scaled <= thresh[1])] = 1
+
+    # Return the mask
+    return binary_output
+
+def abs_sobel_thresh(gray, orient='x', thresh=(0, 255), sobel_kernel=3):
+    """
+    Computes the absolute value of Sobel in the x or y direction
+
+    gray: The image to process, in grayscale
+    orient: The orientation, either 'x' or 'y'
+    sobel_kernel: The Sobel kernel size
+    thres: The threshold to apply
+    """
+    # Take the derivative in x or y given orient = 'x' or 'y'
+    sobel = cv2.Sobel(gray, cv2.CV_64F, orient == 'x', orient == 'y')
+
+    # Take the absolute value of the derivative or gradient
+    abs_sobel = np.absolute(sobel)
+
+    # Scale to 8-bit (0 - 255) then convert to type = np.uint8
+    scaled_sobel = np.uint8(255*abs_sobel/np.max(abs_sobel))
+
+    # Create a mask of 1s where the scaled gradient magnitude 
+    # is > thresh_min and < thresh_max
+    binary_output = np.zeros_like(scaled_sobel)
+    binary_output[(scaled_sobel > thresh[0]) & (scaled_sobel < thresh[1])] = 1
+
+    # 6) Return the mask
+    return binary_output
+
+"""
+3. Data Processing
+"""
+
+def calibrate_chessboard(xdim=9, ydim=6, drawCorners=0, saveFile=0):
     """
     Calibrates chessboard images by correcting lens distortions
 
@@ -41,8 +164,6 @@ def calibrateChessboard(xdim=9, ydim=6, drawCorners=0, saveFile=0):
               undistorted image
     return An array of calibrated images
     """
-    objpoints = [] # 3D points in real world space
-    imgpoints = [] # 2D points in image space
     out = [] # Output images
 
     # Prepare object points, like (0,0,0), (1,0,0), (2,0,0), ... (7,5,0)
@@ -74,7 +195,7 @@ def calibrateChessboard(xdim=9, ydim=6, drawCorners=0, saveFile=0):
                 img = cv2.drawChessboardCorners(img, (xdim, ydim), corners, ret)
             
             # Undistort
-            undist = undistort(img, gray, objpoints, imgpoints)
+            undist = undistort(img, gray)
 
             # Append to the output
             out.append(undist)
@@ -93,5 +214,5 @@ def calibrateChessboard(xdim=9, ydim=6, drawCorners=0, saveFile=0):
     # Return the output images            
     return out
 
-# For function demonstration, saves output with lines
-# calibrateChessboard(drawCorners=1, saveFile=1) 
+# For calibrateChessboard function demonstration, saves output with lines
+# calibrate_chessboard(drawCorners=1, saveFile=1) 
