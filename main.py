@@ -48,30 +48,24 @@ def undistort(img, gray):
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
     return cv2.undistort(img, mtx, dist, None, mtx)
 
-def perspective_transform(img, corners, nx=9, ny=6, offset=100):
+def perspective_transform(img):
     """
     Transforms the perspective of the image
 
     img: The image to transform
-    corners: The corners matrix
-    nx: The number of corners in the x direction
-    ny: The number of corners in the y direction
-    offset: The offset parameter
     return The warped image
     """
     # Define the four source points
-    src = np.float32([corners[0], corners[nx-1], corners[-1], corners[-nx]])
-
-    # Get the image size
-    img_size = (img.shape[1], img.shape[0])
+    src = np.float32([[200, 720], [1100, 720], [595, 450], [685, 450]])
 
     # Define the four destination points
-    dst = np.float32([[offset, offset], [img_size[0]-offset, offset],
-                    [img_size[0]-offset, img_size[1]-offset],
-                    [offset, img_size[1]-offset]])
+    dst = np.float32([[300, 720], [980, 720], [300, 0], [980, 0]])
     
     # Get the transform matrix
     M = cv2.getPerspectiveTransform(src, dst)
+
+    # Get the image size
+    img_size = (img.shape[1], img.shape[0])
 
     # Warp the image to a top-down view
     warped = cv2.warpPerspective(img, M, img_size)
@@ -202,7 +196,7 @@ def calibrate_chessboard(xdim=9, ydim=6, drawCorners=0, saveFile=0):
     drawCorners: Boolean. If true, draws detected corners on image
     saveFile: Boolean. If true, saves a comparison of the original and 
               undistorted image
-    return An array of calibrated images
+    return An array of calibrated images and the warping source array
     """
     out = [] # Output images
 
@@ -251,7 +245,7 @@ def calibrate_chessboard(xdim=9, ydim=6, drawCorners=0, saveFile=0):
                 plt.subplots_adjust(left=0., right=1, top=0.9, bottom=0.)
                 plt.savefig(out_img_dir + '/out_' + fname.split('/')[-1])
 
-    # Return the output images            
+    # Return the output images and src array           
     return out
 
 # For calibrateChessboard function demonstration, saves output with lines
@@ -263,6 +257,7 @@ def img_process_pipeline(fname, ksize=3, saveFile=0):
 
     fname: The filename of the image to process
     ksize: The kernel size
+    src: The source array of detected corners from the calibration step
     saveFile: Boolean: If true, saves the image at various steps along
               the pipeline
     return The processed image
@@ -309,7 +304,16 @@ def img_process_pipeline(fname, ksize=3, saveFile=0):
         plt.savefig(out_img_dir + '/combined_' + fname.split('/')[-1])
 
     # Perspective transform (bird's eye view)
-    # TODO
+    warped, M = perspective_transform(img)
+    if saveFile:
+        f, (ax1, ax2) = plt.subplots(1, 2, figsize=(24, 9))
+        f.tight_layout()
+        ax1.imshow(undist)
+        ax1.set_title('Undistorted Image', fontsize=50)
+        ax2.imshow(warped)
+        ax2.set_title('Undist. & Warped Image', fontsize=50)
+        plt.subplots_adjust(left=0., right=1, top=0.9, bottom=0.)
+        plt.savefig(out_img_dir + '/persp_' + fname.split('/')[-1])
 
 
 def main():
