@@ -23,6 +23,7 @@ The goals / steps of this project are the following:
 
 [undisttest]: ./output_images/undist_test1.jpg "Undistorted Test"
 [combinedtest]: ./output_images/combined_test1.jpg "Combined Test"
+[warpedtest]: ./output_images/persp_test1.jpg "Warped Test"
 
 [image2]: ./test_images/test1.jpg "Road Transformed"
 [image3]: ./examples/binary_combo_example.jpg "Binary Example"
@@ -54,7 +55,7 @@ I then call the function `undistort()`. Here, the output `objpoints` and `imgpoi
 ![alt text][undist2]
 ![alt text][undist3]
 
-Objectively, most of the corrections appear minor but significant.
+Objectively, most of the corrections appear minor but significant. Most of the distortion appears to be be radial distortion.
 
 ### Pipeline (single images)
 
@@ -81,33 +82,21 @@ I used a combination of color and gradient thresholds to generate a binary image
 
 #### 3. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.
 
-The code for my perspective transform includes a function called `warper()`, which appears in lines 1 through 8 in the file `example.py` (output_images/examples/example.py) (or, for example, in the 3rd code cell of the IPython notebook).  The `warper()` function takes as inputs an image (`img`), as well as source (`src`) and destination (`dst`) points.  I chose the hardcode the source and destination points in the following manner:
+Perspective transform is called within `img_process_pipeline()` and specifically processed in the function `perspective_transform()`. I elected to hard-code the source and destination points as follows, as it was the simplest way to achieve a good result:
 
 ```python
-src = np.float32(
-    [[(img_size[0] / 2) - 55, img_size[1] / 2 + 100],
-    [((img_size[0] / 6) - 10), img_size[1]],
-    [(img_size[0] * 5 / 6) + 60, img_size[1]],
-    [(img_size[0] / 2 + 55), img_size[1] / 2 + 100]])
-dst = np.float32(
-    [[(img_size[0] / 4), 0],
-    [(img_size[0] / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), 0]])
+# Define the four source points
+src = np.float32([[200, 720], [1100, 720], [595, 450], [685, 450]])
+
+# Define the four destination points
+dst = np.float32([[300, 720], [980, 720], [300, 0], [980, 0]])
 ```
 
-This resulted in the following source and destination points:
+Using the source and destination points, I calculated the transformation matrix using `cv2.getPerspectiveTransform()`. I then warped the image to a top-down view with `cv2.warpPerspective()`.
 
-| Source        | Destination   | 
-|:-------------:|:-------------:| 
-| 585, 460      | 320, 0        | 
-| 203, 720      | 320, 720      |
-| 1127, 720     | 960, 720      |
-| 695, 460      | 960, 0        |
+In the warped image below, both curved lines appear parallel:
 
-I verified that my perspective transform was working as expected by drawing the `src` and `dst` points onto a test image and its warped counterpart to verify that the lines appear parallel in the warped image.
-
-![alt text][image4]
+![alt text][warpedtest]
 
 #### 4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
 
