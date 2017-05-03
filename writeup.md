@@ -24,6 +24,8 @@ The goals / steps of this project are the following:
 [undisttest]: ./output_images/undist_test1.jpg "Undistorted Test"
 [combinedtest]: ./output_images/combined_test1.jpg "Combined Test"
 [warpedtest]: ./output_images/persp_test1.jpg "Warped Test"
+[histtest]: ./output_images/hist_test1.jpg "Histogram Test"
+[polyfittest]: ./output_images/slide_test1.jpg "Polynomial Fit Test"
 
 [image2]: ./test_images/test1.jpg "Road Transformed"
 [image3]: ./examples/binary_combo_example.jpg "Binary Example"
@@ -64,8 +66,9 @@ The pipeline is executed as follows:
 
 Then, for each image:
 * Correct for distortion
-*
-*
+* Apply color and gradient thresholds
+* Warp the perspective to a bird's-eye view of the lane
+* 
 
 
 #### 1. Provide an example of a distortion-corrected image.
@@ -100,9 +103,13 @@ In the warped image below, both curved lines appear parallel:
 
 #### 4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
 
-Then I did some other stuff and fit my lane lines with a 2nd order polynomial kinda like this:
+First, I created a histogram of the bottom half of the warped perspective image. The code is located in the `histogram()` function. This histogram highlights the pixels (from left to right) that are relatively light in color:
 
-![alt text][image5]
+![alt text][histtest]
+
+Then, I implemented a sliding window search to get a polynomial fit for each lane line in the image. The polynomial fit of each line is plotted on the warped perspective image for visualization.
+
+![alt text][polyfittest]
 
 #### 5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
 
