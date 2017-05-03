@@ -16,7 +16,7 @@ objpoints = [] # 3D points in real world space
 imgpoints = [] # 2D points in image space
 
 """
-1. Image Transformations
+1. Image Transformations and Analysis
 """
 
 def grayscale(img):
@@ -72,6 +72,22 @@ def perspective_transform(img):
 
     # Return the warped image and transform matrix
     return warped, M
+
+def sliding_window(img, saveFig=0):
+    """
+    Implements a sliding window search to identify lane lines
+
+    img: The image
+    saveFig: Whether or not to save the plot and results
+    return
+    """
+    # Take a histogram of the bottom half of the image
+    histogram = np.sum(img[img.shape[0]//2:,:], axis=0)
+
+    # Plot the histogram and save
+    plt.plot(histogram)
+    # if saveFig:
+
 
 """
 2. Threshold Calculations
@@ -303,14 +319,14 @@ def img_process_pipeline(fname, ksize=3, saveFile=0):
         plt.subplots_adjust(left=0., right=1, top=0.9, bottom=0.)
         plt.savefig(out_img_dir + '/combined_' + fname.split('/')[-1])
 
-    # Perspective transform (bird's eye view)
-    warped, M = perspective_transform(img)
+    # Perspective transform (bird's eye view )
+    warped, M = perspective_transform(combined)
     if saveFile:
         f, (ax1, ax2) = plt.subplots(1, 2, figsize=(24, 9))
         f.tight_layout()
         ax1.imshow(undist)
         ax1.set_title('Undistorted Image', fontsize=50)
-        ax2.imshow(warped)
+        ax2.imshow(warped, cmap='gray')
         ax2.set_title('Undist. & Warped Image', fontsize=50)
         plt.subplots_adjust(left=0., right=1, top=0.9, bottom=0.)
         plt.savefig(out_img_dir + '/persp_' + fname.split('/')[-1])
