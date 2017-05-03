@@ -177,8 +177,8 @@ def sliding_window(img, histogram, nwindows=9, margin=100, minpix=50, saveFile=0
         # Plot
         plt.figure()
         plt.imshow(out_img)
-        plt.plot(left_fitx, ploty, color='yellow')
-        plt.plot(right_fitx, ploty, color='yellow')
+        plt.plot(left_fitx, ploty, color='red')
+        plt.plot(right_fitx, ploty, color='blue')
         plt.xlim(0, 1280)
         plt.ylim(720, 0)
         plt.savefig(filename)
