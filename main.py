@@ -186,6 +186,100 @@ def sliding_window(img, histogram, nwindows=9, margin=100, minpix=50, saveFile=0
     # Return
     return left_fit, right_fit
 
+def margin_search(img, left_fit, right_fit, margin=100, saveFile=0, filename=''):
+    """
+    After a successful sliding window search, just search in predefined
+    margins around the previous line position
+
+    img: The image
+    left_fit: Polynomial fit of the left lane line in the previous image
+    right_fit: Polynomial fit of the right lane line in the previous image
+    margin: The width of windows +/- this margin
+    saveFile: Whether to save an output figure
+    filename: The name of the file if saving an output figure
+    return: (left_fit) The left polynomial, (right_fit) The right polynomialy
+    """
+    # Create an output image
+    out_img = np.dstack((img, img, img))*255
+
+    # Identify the x and y positions of all nonzero pixels in the image
+    nonzero = img.nonzero()
+    nonzeroy = np.array(nonzero[0])
+    nonzerox = np.array(nonzero[1])
+
+    # Generate indices of left and right lane pixels
+    left_lane_inds = ((nonzerox > (left_fit[0]*(nonzeroy**2) + left_fit[1]*nonzeroy + left_fit[2] - margin)) & (nonzerox < (left_fit[0]*(nonzeroy**2) + left_fit[1]*nonzeroy + left_fit[2] + margin))) 
+    right_lane_inds = ((nonzerox > (right_fit[0]*(nonzeroy**2) + right_fit[1]*nonzeroy + right_fit[2] - margin)) & (nonzerox < (right_fit[0]*(nonzeroy**2) + right_fit[1]*nonzeroy + right_fit[2] + margin))) 
+
+    # Extract left and right line pixel positions
+    leftx = nonzerox[left_lane_inds]
+    lefty = nonzeroy[left_lane_inds]
+    rightx = nonzerox[right_lane_inds]
+    righty = nonzeroy[right_lane_inds]
+
+    # Fit a second-order polynomial to each
+    left_fit = np.polyfit(lefty, leftx, 2)
+    right_fit = np.polyfit(righty, rightx, 2)
+
+    # Plot the image
+    if saveFile:
+        # Generate x and y values
+        ploty = np.linspace(0, img.shape[0]-1, img.shape[0])
+        left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
+        right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
+
+        # Combine the images
+        out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [255, 0, 0]
+        out_img[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 0, 255]
+
+        # Plot
+        plt.figure()
+        plt.imshow(out_img)
+        plt.plot(left_fitx, ploty, color='red')
+        plt.plot(right_fitx, ploty, color='blue')
+        plt.xlim(0, 1280)
+        plt.ylim(720, 0)
+        plt.savefig(filename)
+
+    # Return
+    return left_fit, right_fit
+
+def radius_of_curvature(img, left_fit, right_fit):
+    """
+    Determines the radius of curvature, in meters, of the left and right lanes
+
+    img: The image 
+    left_fit: The left polynomial fit
+    right_fit: The right polynomial fit
+    return (left_curverad) The left line radius of curvature in meters,
+            (right_curverad) The right line radius of curvature in meters
+    """
+    # Get the radius in pixel space
+    ploty = np.linspace(0, img.shape[0]-1, img.shape[0])
+    y_eval = np.max(ploty)
+    left_curverad = ((1 + (2*left_fit[0]*y_eval + left_fit[1])**2)**1.5) / np.absolute(2*left_fit[0])
+    right_curverad = ((1 + (2*right_fit[0]*y_eval + right_fit[1])**2)**1.5) / np.absolute(2*right_fit[0])
+
+    # Define meters to pixel conversion
+    ym_per_pix = 30 / 720
+    xm_per_pix = 3.7 / 700
+
+    # Generate x and y values
+    left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
+    right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
+
+    # Fit new polynomials to x,y in world space
+    left_fit_cr = np.polyfit(ploty*ym_per_pix, left_fitx*xm_per_pix, 2)
+    right_fit_cr = np.polyfit(ploty*ym_per_pix, right_fitx*xm_per_pix, 2)
+
+    # Calculate the new radii of curvature
+    left_curverad = ((1 + (2*left_fit_cr[0]*y_eval*ym_per_pix + left_fit_cr[1])**2)**1.5) / np.absolute(2*left_fit_cr[0])
+    right_curverad = ((1 + (2*right_fit_cr[0]*y_eval*ym_per_pix + right_fit_cr[1])**2)**1.5) / np.absolute(2*right_fit_cr[0])
+
+    # Return the radius of curvature in meters
+    return left_curverad, right_curverad
+
+
 """
 2. Threshold Calculations
 """
@@ -437,6 +531,11 @@ def img_process_pipeline(fname, ksize=3, saveFile=0):
 
     # Perform a sliding window search to get the polynomial fit of each line
     left_fit, right_fit = sliding_window(warped, hist, saveFile=1, filename=out_img_dir + '/slide_' + fname.split('/')[-1])
+
+    # Get the radius of curvature for both lines
+    left_curverad, right_curverad = radius_of_curvature(warped, left_fit, right_fit)
+    if saveFile:
+        print('left:', left_curverad, 'm', ', right:', right_curverad, 'm')
 
 def main():
     """
