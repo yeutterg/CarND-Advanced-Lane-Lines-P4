@@ -26,6 +26,7 @@ The goals / steps of this project are the following:
 [warpedtest]: ./output_images/persp_test1.jpg "Warped Test"
 [histtest]: ./output_images/hist_test1.jpg "Histogram Test"
 [polyfittest]: ./output_images/slide_test1.jpg "Polynomial Fit Test"
+[newimgtest]: ./output_images/replot_test1.jpg "Area Drawn Test"
 
 [image2]: ./test_images/test1.jpg "Road Transformed"
 [image3]: ./examples/binary_combo_example.jpg "Binary Example"
@@ -125,9 +126,9 @@ This result seems to be a reasonable real-world value based on the U.S. governme
 
 #### 6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
 
-I implemented this step in lines # through # in my code in `yet_another_file.py` in the function `map_lane()`.  Here is an example of my result on a test image:
+I implemented redrawing onto the undistorted image in the function `draw_lines()`. It draws the area on the warped image, then uses the inverse transform matrix to warp the perspective and recast the area in the plane of the original image. It appears to work well on the test image:
 
-![alt text][image6]
+![alt text][newimgtest]
 
 ---
 

@@ -53,7 +53,8 @@ def perspective_transform(img):
     Transforms the perspective of the image
 
     img: The image to transform
-    return The warped image
+    return (warped): The warped image, (M): The transform matrix,
+            (Minv): The inverse transform matrix
     """
     # Define the four source points
     src = np.float32([[200, 720], [1100, 720], [595, 450], [685, 450]])
@@ -64,14 +65,17 @@ def perspective_transform(img):
     # Get the transform matrix
     M = cv2.getPerspectiveTransform(src, dst)
 
+    # Get the inverse transform matrix
+    Minv = cv2.getPerspectiveTransform(dst, src)
+
     # Get the image size
     img_size = (img.shape[1], img.shape[0])
 
     # Warp the image to a top-down view
     warped = cv2.warpPerspective(img, M, img_size)
 
-    # Return the warped image and transform matrix
-    return warped, M
+    # Return the warped image, transform matrix, and inverted transform matrix
+    return warped, M, Minv
 
 def histogram(img):
     """
@@ -197,7 +201,7 @@ def margin_search(img, left_fit, right_fit, margin=100, saveFile=0, filename='')
     margin: The width of windows +/- this margin
     saveFile: Whether to save an output figure
     filename: The name of the file if saving an output figure
-    return: (left_fit) The left polynomial, (right_fit) The right polynomialy
+    return: (left_fit) The left polynomial, (right_fit) The right polynomial
     """
     # Create an output image
     out_img = np.dstack((img, img, img))*255
@@ -279,6 +283,39 @@ def radius_of_curvature(img, left_fit, right_fit):
     # Return the radius of curvature in meters
     return left_curverad, right_curverad
 
+def draw_lines(undist, warped, left_fit, right_fit, Minv):
+    """
+    Draws fit lane lines back on the original image
+
+    undist: The original (undistorted) image
+    warped: The warped image
+    left_fit: The polynomial fit for the left lane line
+    right_fit: The polynomial fit for the right lane line
+    Minv: The inverse perspective matrix
+    return The undistorted image with lane lines drawn
+    """
+    # Create an image to draw the lines on
+    warp_zero = np.zeros_like(warped).astype(np.uint8)
+    color_warp = np.dstack((warp_zero, warp_zero, warp_zero))
+
+    # Generate x and y values
+    ploty = np.linspace(0, undist.shape[0]-1, undist.shape[0])
+    left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
+    right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
+
+    # Recast the x and y points into a usable format for cv2.fillPoly()
+    pts_left = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
+    pts_right = np.array([np.flipud(np.transpose(np.vstack([right_fitx, ploty])))])
+    pts = np.hstack((pts_left, pts_right))
+
+    # Draw the lane onto the warped blank image
+    cv2.fillPoly(color_warp, np.int_([pts]), (0, 255, 0))
+
+    # Warp the blank back to the original image space
+    newwarp = cv2.warpPerspective(color_warp, Minv, (undist.shape[1], undist.shape[0]))
+
+    # Combine the result with the original image and return
+    return cv2.addWeighted(undist, 1, newwarp, 0.3, 0)
 
 """
 2. Threshold Calculations
@@ -511,7 +548,7 @@ def img_process_pipeline(fname, ksize=3, saveFile=0):
         plt.savefig(out_img_dir + '/combined_' + fname.split('/')[-1])
 
     # Perspective transform (bird's eye view )
-    warped, M = perspective_transform(combined)
+    warped, M, Minv = perspective_transform(combined)
     if saveFile:
         f, (ax1, ax2) = plt.subplots(1, 2, figsize=(24, 9))
         f.tight_layout()
@@ -535,7 +572,14 @@ def img_process_pipeline(fname, ksize=3, saveFile=0):
     # Get the radius of curvature for both lines
     left_curverad, right_curverad = radius_of_curvature(warped, left_fit, right_fit)
     if saveFile:
-        print('left:', left_curverad, 'm', ', right:', right_curverad, 'm')
+        print('left:', left_curverad, 'm, right:', right_curverad, 'm')
+
+    # Plot the calculated lane lines on the undistorted image
+    new_img = draw_lines(undist, warped, left_fit, right_fit, Minv)
+    if saveFile:
+        plt.figure()
+        plt.imshow(new_img)
+        plt.savefig(out_img_dir + '/replot_' + fname.split('/')[-1])
 
 def main():
     """
