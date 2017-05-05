@@ -113,7 +113,15 @@ Then, I implemented a sliding window search to get a polynomial fit for each lan
 
 #### 5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
 
-I did this in lines # through # in my code in `my_other_file.py`
+A function, `radius_of_curvature()`, was defined to calculate the radius of curvature of the polynomial fit lines. This function first calculates the radius of curvature in pixel space, then converts it to "real world" space in meters.
+
+For the example image, the radius of curvature was calculated as:
+
+```
+left: 261.037646339 m, right: 321.782499731 m
+```
+
+This result seems to be a reasonable real-world value based on the U.S. government specifications for highway curvature.
 
 #### 6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
 
