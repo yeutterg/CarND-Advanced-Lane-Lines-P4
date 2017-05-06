@@ -26,7 +26,13 @@ The goals / steps of this project are the following:
 [warpedtest]: ./output_images/persp_test1.jpg "Warped Test"
 [histtest]: ./output_images/hist_test1.jpg "Histogram Test"
 [polyfittest]: ./output_images/slide_test1.jpg "Polynomial Fit Test"
-[newimgtest]: ./output_images/replot_test1.jpg "Area Drawn Test"
+
+[newimgtest1]: ./output_images/replot_test1.jpg "Area Drawn Test 1"
+[newimgtest2]: ./output_images/replot_test2.jpg "Area Drawn Test 2"
+[newimgtest3]: ./output_images/replot_test3.jpg "Area Drawn Test 3"
+[newimgtest4]: ./output_images/replot_test4.jpg "Area Drawn Test 4"
+[newimgtest5]: ./output_images/replot_test5.jpg "Area Drawn Test 5"
+[newimgtest6]: ./output_images/replot_test6.jpg "Area Drawn Test 6"
 
 [image2]: ./test_images/test1.jpg "Road Transformed"
 [image3]: ./examples/binary_combo_example.jpg "Binary Example"
@@ -128,7 +134,15 @@ This result seems to be a reasonable real-world value based on the U.S. governme
 
 I implemented redrawing onto the undistorted image in the function `draw_lines()`. It draws the area on the warped image, then uses the inverse transform matrix to warp the perspective and recast the area in the plane of the original image. It appears to work well on the test image:
 
-![alt text][newimgtest]
+![alt text][newimgtest1]
+
+This also appears to work perfectly on the other 5 test images:
+
+![alt text][newimgtest2]
+![alt text][newimgtest3]
+![alt text][newimgtest4]
+![alt text][newimgtest5]
+![alt text][newimgtest6]
 
 ---
 
