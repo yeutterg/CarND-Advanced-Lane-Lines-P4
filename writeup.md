@@ -34,12 +34,8 @@ The goals / steps of this project are the following:
 [newimgtest5]: ./output_images/replot_test5.jpg "Area Drawn Test 5"
 [newimgtest6]: ./output_images/replot_test6.jpg "Area Drawn Test 6"
 
-[image2]: ./test_images/test1.jpg "Road Transformed"
-[image3]: ./examples/binary_combo_example.jpg "Binary Example"
-[image4]: ./examples/warped_straight_lines.jpg "Warp Example"
-[image5]: ./examples/color_fit_lines.jpg "Fit Visual"
-[image6]: ./examples/example_output.jpg "Output"
-[video1]: ./project_video.mp4 "Video"
+[video1]: ./output_images/out_project_video.mp4 "Video 1"
+[video2]: ./output_images/out_challenge_video.mp4 "Video 2"
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/571/view) Points
 
@@ -75,7 +71,10 @@ Then, for each image:
 * Correct for distortion
 * Apply color and gradient thresholds
 * Warp the perspective to a bird's-eye view of the lane
-* 
+* Find the lane line boundaries with a histogram and sliding window search
+* Fit the lane lines with a second-order polynomial
+* Compute the radius of curvature 
+* Plot the area within the lane lines back on the undistorted image
 
 
 #### 1. Provide an example of a distortion-corrected image.
@@ -150,7 +149,9 @@ This also appears to work perfectly on the other 5 test images:
 
 #### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (wobbly lines are ok but no catastrophic failures that would cause the car to drive off the road!).
 
-Here's a [link to my video result](./project_video.mp4)
+The pipeline performs well as-is. There are some minor wobbles on the concrete sections of the road, but otherwise it accurately identifies the area inside the lane lines.
+
+Here's a [link to my video result](./output_images/out_project_video.mp4)
 
 ---
 
@@ -158,4 +159,8 @@ Here's a [link to my video result](./project_video.mp4)
 
 #### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+In developing this project, I worked with a single test image to develop the processing pipeline. Once I was happy with the result at each step, I proceeded to implement the next step. I did not test each stage of the pipeline on all the test images. In hindsight, it would have been better to test various images at each stage of the pipeline for robustness. However, the pipeline worked perfectly on all test images.
+
+Looking at the [project_video.mp4 result](./output_images/out_project_video.mp4), there was some wobbliness on the concrete sections. This was also apparent in the [challenge video](./output_images/out_challenge_video.mp4), where the road surface appears lighter. This is likely due to the reduced contrast between lane lines and the color of the road surface. Setting different thresholds and averaging the previous few frames could prevent this type of error in the future.
+
+To make the pipeline even more robust, I would test on vastly different road surfaces (e.g. different materials, roads with painted markings in the lane, etc.). This would likely increase the complexity of the pipeline.
