@@ -521,20 +521,18 @@ def calibrate_chessboard(xdim=9, ydim=6, drawCorners=0, saveFile=0):
 # For calibrateChessboard function demonstration, saves output with lines
 # calibrate_chessboard(drawCorners=1, saveFile=1) 
 
-def img_process_pipeline(fname, ksize=3, saveFile=0):
+def img_process_pipeline(img, ksize=3, saveFile=0, fname=''):
     """
     The pipeline for image processing
 
-    fname: The filename of the image to process
+    img: The image to process
     ksize: The kernel size
     src: The source array of detected corners from the calibration step
     saveFile: Boolean: If true, saves the image at various steps along
               the pipeline
+    fname: Optional filename parameter, req if saveFile is True
     return The processed image
     """
-    # Get the image from the filename
-    img = mpimg.imread(fname)
-
     # Convert the image to grayscale
     gray = grayscale(img)
 
@@ -608,6 +606,9 @@ def img_process_pipeline(fname, ksize=3, saveFile=0):
         plt.imshow(new_img)
         plt.savefig(out_img_dir + '/replot_' + fname.split('/')[-1])
 
+    # Return the augmented image
+    return new_img
+
 
 def process_video(inFileName, outFileName):
     """
@@ -618,8 +619,9 @@ def process_video(inFileName, outFileName):
     :return:
     """
     movie = VideoFileClip(inFileName)
-    movie_processed = movie.fl_image(img_process_pipeline())
+    movie_processed = movie.fl_image(img_process_pipeline)
     movie_processed.write_videofile(outFileName, audio=False)
+
 
 
 def test():
@@ -629,10 +631,11 @@ def test():
     # Calibrate the camera lens using chessboard images
     calibrate_chessboard()
 
-    # Correct single images for distortion
+    # Process single images through the pipeline
     for i in range(1, 7):
         fname = test_img_dir + "/test" + str(i) + ".jpg"
-        img_process_pipeline(fname, ksize=k_size, saveFile=1)
+        img = mpimg.imread(fname)
+        img_process_pipeline(img, ksize=k_size, saveFile=1, fname=fname)
 
 
 def main(fileName):
@@ -645,8 +648,9 @@ def main(fileName):
     calibrate_chessboard()
 
     # Process the video
-    process_video(fileName, out_img_dir + '/')
+    process_video(fileName, out_img_dir + '/out_' + fileName.split('/')[-1])
 
 
-test()
-# main()
+# test()
+# main('./project_video.mp4')
+main('./challenge_video.mp4')
