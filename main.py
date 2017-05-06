@@ -4,20 +4,23 @@ import glob
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
+from moviepy.editor import VideoFileClip
+
 # Parameters
-k_size = 3 # Kernel size
+k_size = 3  # Kernel size
 
 camera_cal_dir = './camera_cal'
 test_img_dir = './test_images'
 out_img_dir = './output_images'
 
 # Calibration
-objpoints = [] # 3D points in real world space
-imgpoints = [] # 2D points in image space
+objpoints = []  # 3D points in real world space
+imgpoints = []  # 2D points in image space
 
 """
 1. Image Transformations and Analysis
 """
+
 
 def grayscale(img):
     """
@@ -28,6 +31,7 @@ def grayscale(img):
     """
     return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
+
 def hls(img):
     """
     Converts a BGR image to HLS
@@ -36,6 +40,7 @@ def hls(img):
     return The HLS image
     """
     return cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
+
 
 def undistort(img, gray):
     """
@@ -47,6 +52,7 @@ def undistort(img, gray):
     """
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
     return cv2.undistort(img, mtx, dist, None, mtx)
+
 
 def perspective_transform(img):
     """
@@ -61,7 +67,7 @@ def perspective_transform(img):
 
     # Define the four destination points
     dst = np.float32([[300, 720], [980, 720], [300, 0], [980, 0]])
-    
+
     # Get the transform matrix
     M = cv2.getPerspectiveTransform(src, dst)
 
@@ -77,6 +83,7 @@ def perspective_transform(img):
     # Return the warped image, transform matrix, and inverted transform matrix
     return warped, M, Minv
 
+
 def histogram(img):
     """
     Gets the histogram of the bottom half of the image
@@ -85,7 +92,8 @@ def histogram(img):
     return The histogram
     """
     # Take a histogram of the bottom half of the image
-    return np.sum(img[img.shape[0]//2:,:], axis=0)
+    return np.sum(img[img.shape[0] // 2:, :], axis=0)
+
 
 def sliding_window(img, histogram, nwindows=9, margin=100, minpix=50, saveFile=0, filename=''):
     """
@@ -102,15 +110,15 @@ def sliding_window(img, histogram, nwindows=9, margin=100, minpix=50, saveFile=0
     return: (left_fit) The left polynomial, (right_fit) The right polynomial
     """
     # Create an output image
-    out_img = np.dstack((img, img, img))*255
+    out_img = np.dstack((img, img, img)) * 255
 
     # Find the peak of the left and right halves of the histogram
-    midpoint = np.int(histogram.shape[0]/2)
+    midpoint = np.int(histogram.shape[0] / 2)
     leftx_base = np.argmax(histogram[:midpoint])
     rightx_base = np.argmax(histogram[midpoint:]) + midpoint
 
     # Set the window height
-    window_height = np.int(img.shape[0]/nwindows)
+    window_height = np.int(img.shape[0] / nwindows)
 
     # Identify the x and y positions of all nonzero pixels in the image
     nonzero = img.nonzero()
@@ -140,8 +148,10 @@ def sliding_window(img, histogram, nwindows=9, margin=100, minpix=50, saveFile=0
         cv2.rectangle(out_img, (win_xright_low, win_y_low), (win_xright_high, win_y_high), (0, 255, 0), 2)
 
         # Identify the nonzero pixels in x and y within the window
-        good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xleft_low) & (nonzerox < win_xleft_high)).nonzero()[0]
-        good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xright_low) & (nonzerox < win_xright_high)).nonzero()[0]
+        good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xleft_low) & (
+        nonzerox < win_xleft_high)).nonzero()[0]
+        good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xright_low) & (
+        nonzerox < win_xright_high)).nonzero()[0]
 
         # Append these indices to the lists
         left_lane_inds.append(good_left_inds)
@@ -170,9 +180,9 @@ def sliding_window(img, histogram, nwindows=9, margin=100, minpix=50, saveFile=0
     # Plot the image
     if saveFile:
         # Generate x and y values
-        ploty = np.linspace(0, img.shape[0]-1, img.shape[0])
-        left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
-        right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
+        ploty = np.linspace(0, img.shape[0] - 1, img.shape[0])
+        left_fitx = left_fit[0] * ploty ** 2 + left_fit[1] * ploty + left_fit[2]
+        right_fitx = right_fit[0] * ploty ** 2 + right_fit[1] * ploty + right_fit[2]
 
         # Combine the images
         out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [255, 0, 0]
@@ -189,6 +199,7 @@ def sliding_window(img, histogram, nwindows=9, margin=100, minpix=50, saveFile=0
 
     # Return
     return left_fit, right_fit
+
 
 def margin_search(img, left_fit, right_fit, margin=100, saveFile=0, filename=''):
     """
@@ -204,7 +215,7 @@ def margin_search(img, left_fit, right_fit, margin=100, saveFile=0, filename='')
     return: (left_fit) The left polynomial, (right_fit) The right polynomial
     """
     # Create an output image
-    out_img = np.dstack((img, img, img))*255
+    out_img = np.dstack((img, img, img)) * 255
 
     # Identify the x and y positions of all nonzero pixels in the image
     nonzero = img.nonzero()
@@ -212,8 +223,11 @@ def margin_search(img, left_fit, right_fit, margin=100, saveFile=0, filename='')
     nonzerox = np.array(nonzero[1])
 
     # Generate indices of left and right lane pixels
-    left_lane_inds = ((nonzerox > (left_fit[0]*(nonzeroy**2) + left_fit[1]*nonzeroy + left_fit[2] - margin)) & (nonzerox < (left_fit[0]*(nonzeroy**2) + left_fit[1]*nonzeroy + left_fit[2] + margin))) 
-    right_lane_inds = ((nonzerox > (right_fit[0]*(nonzeroy**2) + right_fit[1]*nonzeroy + right_fit[2] - margin)) & (nonzerox < (right_fit[0]*(nonzeroy**2) + right_fit[1]*nonzeroy + right_fit[2] + margin))) 
+    left_lane_inds = ((nonzerox > (left_fit[0] * (nonzeroy ** 2) + left_fit[1] * nonzeroy + left_fit[2] - margin)) & (
+    nonzerox < (left_fit[0] * (nonzeroy ** 2) + left_fit[1] * nonzeroy + left_fit[2] + margin)))
+    right_lane_inds = (
+    (nonzerox > (right_fit[0] * (nonzeroy ** 2) + right_fit[1] * nonzeroy + right_fit[2] - margin)) & (
+    nonzerox < (right_fit[0] * (nonzeroy ** 2) + right_fit[1] * nonzeroy + right_fit[2] + margin)))
 
     # Extract left and right line pixel positions
     leftx = nonzerox[left_lane_inds]
@@ -228,9 +242,9 @@ def margin_search(img, left_fit, right_fit, margin=100, saveFile=0, filename='')
     # Plot the image
     if saveFile:
         # Generate x and y values
-        ploty = np.linspace(0, img.shape[0]-1, img.shape[0])
-        left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
-        right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
+        ploty = np.linspace(0, img.shape[0] - 1, img.shape[0])
+        left_fitx = left_fit[0] * ploty ** 2 + left_fit[1] * ploty + left_fit[2]
+        right_fitx = right_fit[0] * ploty ** 2 + right_fit[1] * ploty + right_fit[2]
 
         # Combine the images
         out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [255, 0, 0]
@@ -248,6 +262,7 @@ def margin_search(img, left_fit, right_fit, margin=100, saveFile=0, filename='')
     # Return
     return left_fit, right_fit
 
+
 def radius_of_curvature(img, left_fit, right_fit):
     """
     Determines the radius of curvature, in meters, of the left and right lanes
@@ -259,29 +274,32 @@ def radius_of_curvature(img, left_fit, right_fit):
             (right_curverad) The right line radius of curvature in meters
     """
     # Get the radius in pixel space
-    ploty = np.linspace(0, img.shape[0]-1, img.shape[0])
+    ploty = np.linspace(0, img.shape[0] - 1, img.shape[0])
     y_eval = np.max(ploty)
-    left_curverad = ((1 + (2*left_fit[0]*y_eval + left_fit[1])**2)**1.5) / np.absolute(2*left_fit[0])
-    right_curverad = ((1 + (2*right_fit[0]*y_eval + right_fit[1])**2)**1.5) / np.absolute(2*right_fit[0])
+    left_curverad = ((1 + (2 * left_fit[0] * y_eval + left_fit[1]) ** 2) ** 1.5) / np.absolute(2 * left_fit[0])
+    right_curverad = ((1 + (2 * right_fit[0] * y_eval + right_fit[1]) ** 2) ** 1.5) / np.absolute(2 * right_fit[0])
 
     # Define meters to pixel conversion
     ym_per_pix = 30 / 720
     xm_per_pix = 3.7 / 700
 
     # Generate x and y values
-    left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
-    right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
+    left_fitx = left_fit[0] * ploty ** 2 + left_fit[1] * ploty + left_fit[2]
+    right_fitx = right_fit[0] * ploty ** 2 + right_fit[1] * ploty + right_fit[2]
 
     # Fit new polynomials to x,y in world space
-    left_fit_cr = np.polyfit(ploty*ym_per_pix, left_fitx*xm_per_pix, 2)
-    right_fit_cr = np.polyfit(ploty*ym_per_pix, right_fitx*xm_per_pix, 2)
+    left_fit_cr = np.polyfit(ploty * ym_per_pix, left_fitx * xm_per_pix, 2)
+    right_fit_cr = np.polyfit(ploty * ym_per_pix, right_fitx * xm_per_pix, 2)
 
     # Calculate the new radii of curvature
-    left_curverad = ((1 + (2*left_fit_cr[0]*y_eval*ym_per_pix + left_fit_cr[1])**2)**1.5) / np.absolute(2*left_fit_cr[0])
-    right_curverad = ((1 + (2*right_fit_cr[0]*y_eval*ym_per_pix + right_fit_cr[1])**2)**1.5) / np.absolute(2*right_fit_cr[0])
+    left_curverad = ((1 + (2 * left_fit_cr[0] * y_eval * ym_per_pix + left_fit_cr[1]) ** 2) ** 1.5) / np.absolute(
+        2 * left_fit_cr[0])
+    right_curverad = ((1 + (2 * right_fit_cr[0] * y_eval * ym_per_pix + right_fit_cr[1]) ** 2) ** 1.5) / np.absolute(
+        2 * right_fit_cr[0])
 
     # Return the radius of curvature in meters
     return left_curverad, right_curverad
+
 
 def draw_lines(undist, warped, left_fit, right_fit, Minv):
     """
@@ -299,9 +317,9 @@ def draw_lines(undist, warped, left_fit, right_fit, Minv):
     color_warp = np.dstack((warp_zero, warp_zero, warp_zero))
 
     # Generate x and y values
-    ploty = np.linspace(0, undist.shape[0]-1, undist.shape[0])
-    left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
-    right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
+    ploty = np.linspace(0, undist.shape[0] - 1, undist.shape[0])
+    left_fitx = left_fit[0] * ploty ** 2 + left_fit[1] * ploty + left_fit[2]
+    right_fitx = right_fit[0] * ploty ** 2 + right_fit[1] * ploty + right_fit[2]
 
     # Recast the x and y points into a usable format for cv2.fillPoly()
     pts_left = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
@@ -317,11 +335,13 @@ def draw_lines(undist, warped, left_fit, right_fit, Minv):
     # Combine the result with the original image and return
     return cv2.addWeighted(undist, 1, newwarp, 0.3, 0)
 
+
 """
 2. Threshold Calculations
 """
 
-def dir_threshold(gray, sobel_kernel=3, thresh=(0, np.pi/2)):
+
+def dir_threshold(gray, sobel_kernel=3, thresh=(0, np.pi / 2)):
     """
     Computes the direction of the gradient in both the x and y directions
     and applies a threshold as a layer mask
@@ -349,6 +369,7 @@ def dir_threshold(gray, sobel_kernel=3, thresh=(0, np.pi/2)):
     # Return the mask
     return binary_output
 
+
 def mag_thresh(gray, sobel_kernel=3, thresh=(0, 255)):
     """
     Computes the magnitude of the gradient and applies a threshold 
@@ -364,11 +385,11 @@ def mag_thresh(gray, sobel_kernel=3, thresh=(0, 255)):
     sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=sobel_kernel)
 
     # Calculate the gradient magnitude
-    mag_sobel = np.sqrt(sobelx**2 + sobely**2)
+    mag_sobel = np.sqrt(sobelx ** 2 + sobely ** 2)
 
     # Scale to 8-bit (0 - 255) then convert to type = np.uint8
-    scale_factor = np.max(mag_sobel)/255 
-    mag_scaled = (mag_sobel/scale_factor).astype(np.uint8) 
+    scale_factor = np.max(mag_sobel) / 255
+    mag_scaled = (mag_sobel / scale_factor).astype(np.uint8)
 
     # Create a mask of 1s where the scaled gradient magnitude 
     # is > thresh_min and <= thresh_max
@@ -377,6 +398,7 @@ def mag_thresh(gray, sobel_kernel=3, thresh=(0, 255)):
 
     # Return the mask
     return binary_output
+
 
 def abs_sobel_thresh(gray, orient='x', thresh=(0, 255), sobel_kernel=3):
     """
@@ -396,7 +418,7 @@ def abs_sobel_thresh(gray, orient='x', thresh=(0, 255), sobel_kernel=3):
     abs_sobel = np.absolute(sobel)
 
     # Scale to 8-bit (0 - 255) then convert to type = np.uint8
-    scaled_sobel = np.uint8(255*abs_sobel/np.max(abs_sobel))
+    scaled_sobel = np.uint8(255 * abs_sobel / np.max(abs_sobel))
 
     # Create a mask of 1s where the scaled gradient magnitude 
     # is > thresh_min and < thresh_max
@@ -405,6 +427,7 @@ def abs_sobel_thresh(gray, orient='x', thresh=(0, 255), sobel_kernel=3):
 
     # 6) Return the mask
     return binary_output
+
 
 def saturation_thresh(img, thresh=(0, 255)):
     """
@@ -418,7 +441,7 @@ def saturation_thresh(img, thresh=(0, 255)):
     hlsimg = hls(img)
 
     # Apply the threshold to the S channel
-    S = hlsimg[:,:,2]
+    S = hlsimg[:, :, 2]
 
     # Create a mask with the threshold applies
     binary = np.zeros_like(S)
@@ -427,9 +450,11 @@ def saturation_thresh(img, thresh=(0, 255)):
     # Return the mask
     return binary
 
+
 """
 3. Data Processing
 """
+
 
 def calibrate_chessboard(xdim=9, ydim=6, drawCorners=0, saveFile=0):
     """
@@ -442,14 +467,14 @@ def calibrate_chessboard(xdim=9, ydim=6, drawCorners=0, saveFile=0):
               undistorted image
     return An array of calibrated images and the warping source array
     """
-    out = [] # Output images
+    out = []  # Output images
 
     # Prepare object points, like (0,0,0), (1,0,0), (2,0,0), ... (7,5,0)
-    objp = np.zeros((ydim*xdim, 3), np.float32)
-    objp[:,:2] = np.mgrid[0:xdim,0:ydim].T.reshape(-1,2) # x, y coordinates
+    objp = np.zeros((ydim * xdim, 3), np.float32)
+    objp[:, :2] = np.mgrid[0:xdim, 0:ydim].T.reshape(-1, 2)  # x, y coordinates
 
     # Import the calibration images
-    images = glob.glob(camera_cal_dir + '/calibration*.jpg') 
+    images = glob.glob(camera_cal_dir + '/calibration*.jpg')
 
     # Process each calibration image
     for fname in images:
@@ -457,7 +482,7 @@ def calibrate_chessboard(xdim=9, ydim=6, drawCorners=0, saveFile=0):
         img = mpimg.imread(fname)
 
         # Convert to grayscale
-        gray = grayscale(img) 
+        gray = grayscale(img)
 
         # Find the chessboard corners
         ret, corners = cv2.findChessboardCorners(gray, (xdim, ydim), None)
@@ -471,7 +496,7 @@ def calibrate_chessboard(xdim=9, ydim=6, drawCorners=0, saveFile=0):
             # Draw the corners
             if drawCorners:
                 img = cv2.drawChessboardCorners(img, (xdim, ydim), corners, ret)
-            
+
             # Undistort
             undist = undistort(img, gray)
 
@@ -491,6 +516,7 @@ def calibrate_chessboard(xdim=9, ydim=6, drawCorners=0, saveFile=0):
 
     # Return the output images and src array           
     return out
+
 
 # For calibrateChessboard function demonstration, saves output with lines
 # calibrate_chessboard(drawCorners=1, saveFile=1) 
@@ -536,7 +562,7 @@ def img_process_pipeline(fname, ksize=3, saveFile=0):
 
     # Combine the thresholding results
     combined = np.zeros_like(dir_binary)
-    combined[((gradx == 1) & (grady == 1)) | ((mag_binary == 1) & (dir_binary == 1))| (sat_binary == 1)] = 1
+    combined[((gradx == 1) & (grady == 1)) | ((mag_binary == 1) & (dir_binary == 1)) | (sat_binary == 1)] = 1
     if saveFile:
         f, (ax1, ax2) = plt.subplots(1, 2, figsize=(24, 9))
         f.tight_layout()
@@ -567,7 +593,8 @@ def img_process_pipeline(fname, ksize=3, saveFile=0):
         plt.savefig(out_img_dir + '/hist_' + fname.split('/')[-1])
 
     # Perform a sliding window search to get the polynomial fit of each line
-    left_fit, right_fit = sliding_window(warped, hist, saveFile=1, filename=out_img_dir + '/slide_' + fname.split('/')[-1])
+    left_fit, right_fit = sliding_window(warped, hist, saveFile=1,
+                                         filename=out_img_dir + '/slide_' + fname.split('/')[-1])
 
     # Get the radius of curvature for both lines
     left_curverad, right_curverad = radius_of_curvature(warped, left_fit, right_fit)
@@ -581,15 +608,45 @@ def img_process_pipeline(fname, ksize=3, saveFile=0):
         plt.imshow(new_img)
         plt.savefig(out_img_dir + '/replot_' + fname.split('/')[-1])
 
-def main():
+
+def process_video(inFileName, outFileName):
     """
-    The main project pipeline
+    Run the pipeline on a video
+
+    :inFileName: The video file to process
+    :outFileName: The file to store the output video
+    :return:
+    """
+    movie = VideoFileClip(inFileName)
+    movie_processed = movie.fl_image(img_process_pipeline())
+    movie_processed.write_videofile(outFileName, audio=False)
+
+
+def test():
+    """
+    The main project pipeline applied to one test image
     """
     # Calibrate the camera lens using chessboard images
     calibrate_chessboard()
 
-    # Correct a single image for distortion
-    fname = test_img_dir + "/test1.jpg"
-    img_process_pipeline(fname, ksize=k_size, saveFile=1)
+    # Correct single images for distortion
+    for i in range(1, 7):
+        fname = test_img_dir + "/test" + str(i) + ".jpg"
+        img_process_pipeline(fname, ksize=k_size, saveFile=1)
 
-main()
+
+def main(fileName):
+    """
+    The main project pipeline
+
+    :fileName: The video to process
+    """
+    # Calibrate the camera lens using chessboard images
+    calibrate_chessboard()
+
+    # Process the video
+    process_video(fileName, out_img_dir + '/')
+
+
+test()
+# main()
