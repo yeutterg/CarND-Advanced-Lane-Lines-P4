@@ -305,6 +305,33 @@ def radius_of_curvature(img, left_fit, right_fit):
     return left_curverad, right_curverad, avg_curverad
 
 
+def distance_from_center(left_fit, right_fit):
+    """
+    Calculates the distance from the center
+
+    :param left_fit: The left polynomial fit
+    :param right_fit: The right polynomial fit
+    :return: (str) The string descriptor e.g. "1.00m left",
+             (left) True if left, false if right
+             (meters) The distance left or right in meters
+    """
+
+    y = 700
+    mid_x = 650
+    xm_per_pix = 3.7 / 700
+
+    x_left = left_fit[0] * (y**2) + left_fit[1] * y + left_fit[2]
+    x_right = right_fit[0] * (y**2) + right_fit[1] * y + right_fit[2]
+    meters = xm_per_pix * ((x_left + x_right) / 2 - mid_x)
+
+    left = meters < 0
+    meters = np.absolute(meters)
+
+    str = "%.2fm %s" % (meters, 'left' if left else 'right')
+
+    return str, left, meters
+
+
 def draw_lines(undist, warped, left_fit, right_fit, Minv):
     """
     Draws fit lane lines back on the original image
@@ -606,6 +633,12 @@ def img_process_pipeline(img, ksize=3, saveFile=0, fname=''):
     # Print the radius of curvature on the undistorted image
     cv2.putText(undist, 'Radius of Curvature: %.2fm' % avg_curverad, (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1,
                 (255, 255, 255), 2)
+
+    # Get the distance from the center
+    str, left, meters = distance_from_center(left_fit, right_fit)
+
+    # Print the distance from center on the undistorted image
+    cv2.putText(undist, "Dist. from Center: " + str, (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
 
     # Plot the calculated lane lines on the undistorted image
     new_img = draw_lines(undist, warped, left_fit, right_fit, Minv)
