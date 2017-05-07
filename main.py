@@ -272,6 +272,7 @@ def radius_of_curvature(img, left_fit, right_fit):
     right_fit: The right polynomial fit
     return (left_curverad) The left line radius of curvature in meters,
             (right_curverad) The right line radius of curvature in meters
+            (avg_curverad) The average of the left and right curves
     """
     # Get the radius in pixel space
     ploty = np.linspace(0, img.shape[0] - 1, img.shape[0])
@@ -297,8 +298,11 @@ def radius_of_curvature(img, left_fit, right_fit):
     right_curverad = ((1 + (2 * right_fit_cr[0] * y_eval * ym_per_pix + right_fit_cr[1]) ** 2) ** 1.5) / np.absolute(
         2 * right_fit_cr[0])
 
+    # Calculate the average
+    avg_curverad = np.mean([left_curverad, right_curverad])
+
     # Return the radius of curvature in meters
-    return left_curverad, right_curverad
+    return left_curverad, right_curverad, avg_curverad
 
 
 def draw_lines(undist, warped, left_fit, right_fit, Minv):
@@ -595,9 +599,13 @@ def img_process_pipeline(img, ksize=3, saveFile=0, fname=''):
                                          filename=out_img_dir + '/slide_' + fname.split('/')[-1])
 
     # Get the radius of curvature for both lines
-    left_curverad, right_curverad = radius_of_curvature(warped, left_fit, right_fit)
+    left_curverad, right_curverad, avg_curverad = radius_of_curvature(warped, left_fit, right_fit)
     if saveFile:
-        print('left:', left_curverad, 'm, right:', right_curverad, 'm')
+        print('left:', left_curverad, 'm, right:', right_curverad, 'm, avg:', avg_curverad, 'm')
+
+    # Print the radius of curvature on the undistorted image
+    cv2.putText(undist, 'Radius of Curvature: %.2fm' % avg_curverad, (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                (255, 255, 255), 2)
 
     # Plot the calculated lane lines on the undistorted image
     new_img = draw_lines(undist, warped, left_fit, right_fit, Minv)
@@ -651,6 +659,6 @@ def main(fileName):
     process_video(fileName, out_img_dir + '/out_' + fileName.split('/')[-1])
 
 
-# test()
+test()
 # main('./project_video.mp4')
-main('./challenge_video.mp4')
+# main('./challenge_video.mp4')
