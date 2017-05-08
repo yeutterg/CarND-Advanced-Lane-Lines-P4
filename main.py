@@ -579,19 +579,25 @@ def img_process_pipeline(img, ksize=3, saveFile=0, fname=''):
         plt.subplots_adjust(left=0., right=1, top=0.9, bottom=0.)
         plt.savefig(out_img_dir + '/undist_' + fname.split('/')[-1])
 
-    # Get the grayscale of the undistorted image
-    gray = grayscale(undist)
+
 
     # Apply each of the thresholding functions
-    gradx = abs_sobel_thresh(gray, orient='x', sobel_kernel=ksize, thresh=(20, 100))
-    grady = abs_sobel_thresh(gray, orient='y', sobel_kernel=ksize, thresh=(20, 100))
-    mag_binary = mag_thresh(gray, sobel_kernel=ksize, thresh=(30, 100))
-    dir_binary = dir_threshold(gray, sobel_kernel=ksize, thresh=(0.7, 1.3))
-    sat_binary = saturation_thresh(undist, thresh=(200, 255))
+    # gradx = abs_sobel_thresh(gray, orient='x', sobel_kernel=ksize, thresh=(200, 255)) # (20, 100), (230,255)
+    # grady = abs_sobel_thresh(gray, orient='y', sobel_kernel=ksize, thresh=(250, 255)) # (20, 100)
+    # mag_binary = mag_thresh(gray, sobel_kernel=ksize, thresh=(220, 255)) #old (30, 100)
+    # dir_binary = dir_threshold(gray, sobel_kernel=ksize, thresh=(1.8, 2.5))  # (0.7,1.3)
+    # sat_binary = saturation_thresh(undist, thresh=(180, 255))  # old (200, 255), (180, 255)
+    gradx = abs_sobel_thresh(gray, orient='x', sobel_kernel=ksize, thresh=(120, 254))  # (20, 100), (230,255)
+    grady = abs_sobel_thresh(gray, orient='y', sobel_kernel=ksize, thresh=(0, 255))  # (20, 100)
+    mag_binary = mag_thresh(gray, sobel_kernel=ksize, thresh=(245, 254))  # old (30, 100), (220,255)
+    dir_binary = dir_threshold(gray, sobel_kernel=ksize, thresh=(1.8, 2.5))  # (0.7,1.3)
+    sat_binary = saturation_thresh(undist, thresh=(180, 255))  # old (200, 255), (180, 255)
 
     # Combine the thresholding results
     combined = np.zeros_like(dir_binary)
     combined[((gradx == 1) & (grady == 1)) | ((mag_binary == 1) & (dir_binary == 1)) | (sat_binary == 1)] = 1
+    combined[(gradx == 1) | ((mag_binary == 1) & (dir_binary == 1)) | (sat_binary == 1)] = 1
+
     if saveFile:
         f, (ax1, ax2) = plt.subplots(1, 2, figsize=(24, 9))
         f.tight_layout()
