@@ -585,7 +585,7 @@ def calibrate_chessboard(xdim=9, ydim=6, drawCorners=0, saveFile=0):
 # For calibrateChessboard function demonstration, saves output with lines
 # calibrate_chessboard(drawCorners=1, saveFile=1) 
 
-def fit_mvg_avg(left_fit, right_fit, num=5):
+def fit_mvg_avg(left_fit, right_fit, num=6):
     """
     """
     global left_fit_prev, right_fit_prev
@@ -605,12 +605,6 @@ def fit_mvg_avg(left_fit, right_fit, num=5):
         # Get the moving average for each fit polynomial
         left_fit_avg = np.average(left_fit_hist, axis=0)
         right_fit_avg = np.average(right_fit_hist, axis=0)
-
-        # If values are within range of previous values, update the previous value. Else, discard
-        print(left_fit_avg)
-        print(right_fit_avg)
-        print(left_fit_prev)
-        print(right_fit_hist)
 
         if np.sign(left_fit_avg[0]) == np.sign(right_fit_avg[0]):
             if np.absolute(left_fit_avg[0] - left_fit_prev[0])  <= 7e-4:
@@ -712,12 +706,24 @@ def img_process_pipeline(img, ksize=3, saveFile=0, fname='', smoothing=1):
         plt.plot(hist)
         plt.savefig(out_img_dir + '/hist_' + fname.split('/')[-1])
 
-    # Perform a sliding window search to get the polynomial fit of each line
-    left_fit, right_fit = sliding_window(warped, hist, saveFile=1,
-                                         filename=out_img_dir + '/slide_' + fname.split('/')[-1])
+    # Initialize the polynomial fit values for each line
+    left_fit = []
+    right_fit = []
 
-    if smoothing:
-        left_fit, right_fit = fit_mvg_avg(left_fit, right_fit)
+    # Determine if this is the first image
+    if len(left_fit_prev) == 0:
+        # Perform a sliding window search to get the polynomial fit of each line
+        if saveFile:
+            left_fit, right_fit = sliding_window(warped, hist, saveFile=1,
+                                                filename=out_img_dir + '/slide_' +                                                       fname.split('/')[-1])
+        else:
+            left_fit, right_fit = sliding_window(warped, hist)
+    else: 
+        # Perform a margin search with the previous fit values
+        left_fit, right_fit = margin_search(warped, left_fit, right_fit)
+
+    # if smoothing:
+    #     left_fit, right_fit = fit_mvg_avg(left_fit, right_fit)
 
     # Get the radius of curvature for both lines
     left_curverad, right_curverad, avg_curverad = radius_of_curvature(warped, left_fit, right_fit)
