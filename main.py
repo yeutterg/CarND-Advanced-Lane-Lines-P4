@@ -611,10 +611,12 @@ def fit_mvg_avg(left_fit, right_fit, num=5):
         print(right_fit_avg)
         print(left_fit_prev)
         print(right_fit_hist)
-        if np.absolute(left_fit_avg[0] - left_fit_prev[0])  <= 7e-4:
-            left_fit_prev = left_fit_avg
-        if np.absolute(right_fit_avg[0] - right_fit_prev[0])  <= 7e-4:
-            right_fit_prev = right_fit_avg
+
+        if np.sign(left_fit_avg[0]) == np.sign(right_fit_avg[0]):
+            if np.absolute(left_fit_avg[0] - left_fit_prev[0])  <= 7e-4:
+                left_fit_prev = left_fit_avg
+            if np.absolute(right_fit_avg[0] - right_fit_prev[0])  <= 7e-4:
+                right_fit_prev = right_fit_avg
     else:
         # Set the previous value to the present fit value
         left_fit_prev = left_fit
