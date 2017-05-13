@@ -606,11 +606,11 @@ def fit_mvg_avg(left_fit, right_fit, num=5, diff=1e-3):
         left_fit_avg = np.average(left_fit_hist, axis=0)
         right_fit_avg = np.average(right_fit_hist, axis=0)
 
-        if np.sign(left_fit_avg[0]) == np.sign(right_fit_avg[0]):
-            if np.absolute(left_fit_avg[0] - left_fit_prev[0])  <= diff:
-                left_fit_prev = left_fit_avg
-            if np.absolute(right_fit_avg[0] - right_fit_prev[0])  <= diff:
-                right_fit_prev = right_fit_avg
+        # if np.sign(left_fit_avg[0]) == np.sign(right_fit_avg[0]):
+        if np.absolute(left_fit_avg[0] - left_fit_prev[0])  <= diff:
+            left_fit_prev = left_fit_avg
+        if np.absolute(right_fit_avg[0] - right_fit_prev[0])  <= diff:
+            right_fit_prev = right_fit_avg
     else:
         # Set the previous value to the present fit value
         left_fit_prev = left_fit
@@ -724,7 +724,7 @@ def img_process_pipeline(img, ksize=3, saveFile=0, fname='', smoothing=1):
 
     # Apply smoothing
     if smoothing:
-        left_fit, right_fit = fit_mvg_avg(left_fit, right_fit, num=3)
+        left_fit, right_fit = fit_mvg_avg(left_fit, right_fit, num=3, diff=5e-4)
 
     # Get the radius of curvature for both lines
     left_curverad, right_curverad, avg_curverad = radius_of_curvature(warped, left_fit, right_fit)
