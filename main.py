@@ -7,7 +7,7 @@ import matplotlib.image as mpimg
 from moviepy.editor import VideoFileClip
 
 # Parameters
-k_size = 3  # Kernel size
+k_size = 15  # Kernel size
 
 camera_cal_dir = './camera_cal'
 test_img_dir = './test_images'
@@ -16,6 +16,12 @@ out_img_dir = './output_images'
 # Calibration
 objpoints = []  # 3D points in real world space
 imgpoints = []  # 2D points in image space
+
+# Store fit values
+left_fit_hist = []
+right_fit_hist = []
+left_fit_prev = []
+right_fit_prev = []
 
 """
 1. Image Transformations and Analysis
@@ -39,7 +45,7 @@ def hls(img):
     img: The image in BGR color format
     return The HLS image
     """
-    return cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
+    return cv2.cvtColor(img, cv2.COLOR_BGR2HLS).astype(np.float)
 
 
 def undistort(img, gray):
@@ -482,6 +488,33 @@ def saturation_thresh(img, thresh=(0, 255)):
     return binary
 
 
+# def threshold(undist):
+#     """ 
+    
+#     """
+#     # Copy the image
+#     img = np.copy(undist)
+
+#     # Convert to HLS
+#     hlsimg = hls(img)
+
+#     # Define the white color mask
+#     white_min = np.array([0, 210, 0], dtype=np.uint8)
+#     white_max = np.array([255, 255, 255], dtype=np.uint8)
+#     mask_white = cv2.inRange(hlsimg, white_min, white_max)
+
+#     # Define the yellow color mask
+#     yellow_min = np.array([18, 0, 100], dtype=np.uint8)
+#     yellow_max = np.array([30, 220, 255], dtype=np.uint8)
+#     mask_yellow = cv2.inRange(hlsimg, yellow_min, yellow_max)
+
+#     # Apply magnitude, direction, and saturation thresholds
+
+#     # Generate the combined function
+#     combined = np.zeros_like(mask_white)
+
+
+
 """
 3. Data Processing
 """
@@ -552,7 +585,46 @@ def calibrate_chessboard(xdim=9, ydim=6, drawCorners=0, saveFile=0):
 # For calibrateChessboard function demonstration, saves output with lines
 # calibrate_chessboard(drawCorners=1, saveFile=1) 
 
-def img_process_pipeline(img, ksize=3, saveFile=0, fname=''):
+def fit_mvg_avg(left_fit, right_fit, num=5):
+    """
+    """
+    global left_fit_prev, right_fit_prev
+
+    left_fit_hist.append(left_fit)
+    right_fit_hist.append(right_fit)
+
+    # Determine whether this is the first frame in the video
+    leftHistLen = len(left_fit_hist)
+    if leftHistLen > 1:
+        # Truncate history if it is longer than the moving average number
+        if leftHistLen > num:
+            left_fit_hist.pop(0)
+        if len(right_fit_hist) > num:
+            right_fit_hist.pop(0)
+
+        # Get the moving average for each fit polynomial
+        left_fit_avg = np.average(left_fit_hist, axis=0)
+        right_fit_avg = np.average(right_fit_hist, axis=0)
+
+        # If values are within range of previous values, update the previous value. Else, discard
+        print(left_fit_avg)
+        print(right_fit_avg)
+        print(left_fit_prev)
+        print(right_fit_hist)
+        if np.absolute(left_fit_avg[0] - left_fit_prev[0])  <= 7e-4:
+            left_fit_prev = left_fit_avg
+        if np.absolute(right_fit_avg[0] - right_fit_prev[0])  <= 7e-4:
+            right_fit_prev = right_fit_avg
+    else:
+        # Set the previous value to the present fit value
+        left_fit_prev = left_fit
+        right_fit_prev = right_fit
+
+    # Return the values
+    return left_fit_prev, right_fit_prev   
+
+
+def img_process_pipeline(img, ksize=3, saveFile=0, fname='', smoothing=1):
     """
     The pipeline for image processing
 
@@ -562,7 +634,8 @@ def img_process_pipeline(img, ksize=3, saveFile=0, fname=''):
     saveFile: Boolean: If true, saves the image at various steps along
               the pipeline
     fname: Optional filename parameter, req if saveFile is True
-    return The processed image
+    smoothing: Turn smoothing (moving average) on or off 
+    return (new_img) The processed image
     """
     # Convert the image to grayscale
     gray = grayscale(img)
@@ -582,16 +655,26 @@ def img_process_pipeline(img, ksize=3, saveFile=0, fname=''):
 
 
     # Apply each of the thresholding functions
-    # gradx = abs_sobel_thresh(gray, orient='x', sobel_kernel=ksize, thresh=(200, 255)) # (20, 100), (230,255)
-    # grady = abs_sobel_thresh(gray, orient='y', sobel_kernel=ksize, thresh=(250, 255)) # (20, 100)
-    # mag_binary = mag_thresh(gray, sobel_kernel=ksize, thresh=(220, 255)) #old (30, 100)
+    # gradx = abs_sobel_thresh(gray, orient='x', sobel_kernel=ksize, thresh=(20, 100)) # (20, 100), (230,255)
+    # grady = abs_sobel_thresh(gray, orient='y', sobel_kernel=ksize, thresh=(20, 100)) # (20, 100)
+    # mag_binary = mag_thresh(gray, sobel_kernel=ksize, thresh=(30, 100)) #old (30, 100)
+    # dir_binary = dir_threshold(gray, sobel_kernel=ksize, thresh=(0.7, 1.3))  # (0.7,1.3)
+    # sat_binary = saturation_thresh(undist, thresh=(200, 255))  # old (200, 255), (180, 255)
+    # gradx = abs_sobel_thresh(gray, orient='x', sobel_kernel=ksize, thresh=(120, 254))  # (20, 100), (230,255)
+    # grady = abs_sobel_thresh(gray, orient='y', sobel_kernel=ksize, thresh=(0, 255))  # (20, 100)
+    # mag_binary = mag_thresh(gray, sobel_kernel=ksize, thresh=(245, 254))  # old (30, 100), (220,255)
     # dir_binary = dir_threshold(gray, sobel_kernel=ksize, thresh=(1.8, 2.5))  # (0.7,1.3)
     # sat_binary = saturation_thresh(undist, thresh=(180, 255))  # old (200, 255), (180, 255)
-    gradx = abs_sobel_thresh(gray, orient='x', sobel_kernel=ksize, thresh=(120, 254))  # (20, 100), (230,255)
-    grady = abs_sobel_thresh(gray, orient='y', sobel_kernel=ksize, thresh=(0, 255))  # (20, 100)
-    mag_binary = mag_thresh(gray, sobel_kernel=ksize, thresh=(245, 254))  # old (30, 100), (220,255)
-    dir_binary = dir_threshold(gray, sobel_kernel=ksize, thresh=(1.8, 2.5))  # (0.7,1.3)
-    sat_binary = saturation_thresh(undist, thresh=(180, 255))  # old (200, 255), (180, 255)
+    gradx = abs_sobel_thresh(gray, orient='x', sobel_kernel=ksize, thresh=(120, 255)) # (20, 100), (230,255)
+    grady = abs_sobel_thresh(gray, orient='y', sobel_kernel=ksize, thresh=(20, 100)) # (20, 100)
+    mag_binary = mag_thresh(gray, sobel_kernel=ksize, thresh=(30, 100)) #old (30, 100)
+    dir_binary = dir_threshold(gray, sobel_kernel=ksize, thresh=(0.7, 1.3))  # (0.7,1.3)
+    sat_binary = saturation_thresh(undist, thresh=(200, 255))  # old (200, 255), (180, 255)
+
+    # 17-05-11 22:46 changed dir binary to 1.8, 2.5
+    # 17-05-12 06:57 Changed gradx to 120, 255, dir binary back to 0.7, 1.3
+    # 17-05-12 07:52 changed mag_binary to 230, 254
+    # 17-05-12 08:23 changed mag_binary back to 30, 100
 
     # Combine the thresholding results
     combined = np.zeros_like(dir_binary)
@@ -630,6 +713,9 @@ def img_process_pipeline(img, ksize=3, saveFile=0, fname=''):
     # Perform a sliding window search to get the polynomial fit of each line
     left_fit, right_fit = sliding_window(warped, hist, saveFile=1,
                                          filename=out_img_dir + '/slide_' + fname.split('/')[-1])
+
+    if smoothing:
+        left_fit, right_fit = fit_mvg_avg(left_fit, right_fit)
 
     # Get the radius of curvature for both lines
     left_curverad, right_curverad, avg_curverad = radius_of_curvature(warped, left_fit, right_fit)
@@ -682,7 +768,7 @@ def test():
     for i in range(1, 7):
         fname = test_img_dir + "/test" + str(i) + ".jpg"
         img = mpimg.imread(fname)
-        img_process_pipeline(img, ksize=k_size, saveFile=1, fname=fname)
+        img_process_pipeline(img, ksize=k_size, saveFile=1, fname=fname, smoothing=0)
 
 
 def main(fileName):
@@ -698,6 +784,6 @@ def main(fileName):
     process_video(fileName, out_img_dir + '/out_' + fileName.split('/')[-1])
 
 
-test()
-# main('./project_video.mp4')
+# test()
+main('./project_video.mp4')
 # main('./challenge_video.mp4')
