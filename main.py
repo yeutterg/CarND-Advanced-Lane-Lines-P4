@@ -720,10 +720,11 @@ def img_process_pipeline(img, ksize=3, saveFile=0, fname='', smoothing=1):
             left_fit, right_fit = sliding_window(warped, hist)
     else: 
         # Perform a margin search with the previous fit values
-        left_fit, right_fit = margin_search(warped, left_fit, right_fit)
+        left_fit, right_fit = margin_search(warped, left_fit_prev, right_fit_prev)
 
-    # if smoothing:
-    #     left_fit, right_fit = fit_mvg_avg(left_fit, right_fit)
+    # Apply smoothing
+    if smoothing:
+        left_fit, right_fit = fit_mvg_avg(left_fit, right_fit)
 
     # Get the radius of curvature for both lines
     left_curverad, right_curverad, avg_curverad = radius_of_curvature(warped, left_fit, right_fit)
