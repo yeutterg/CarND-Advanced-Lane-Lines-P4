@@ -633,11 +633,14 @@ def img_process_pipeline(img, ksize=3, saveFile=0, fname='', smoothing=1):
     smoothing: Turn smoothing (moving average) on or off 
     return (new_img) The processed image
     """
+    # Copy the image
+    new_img = np.copy(img)
+
     # Convert the image to grayscale
-    gray = grayscale(img)
+    gray = grayscale(new_img)
 
     # Correct image distortion
-    undist = undistort(img, gray)
+    undist = undistort(new_img, gray)
     if saveFile:
         f, (ax1, ax2) = plt.subplots(1, 2, figsize=(24, 9))
         f.tight_layout()
@@ -715,16 +718,16 @@ def img_process_pipeline(img, ksize=3, saveFile=0, fname='', smoothing=1):
         # Perform a sliding window search to get the polynomial fit of each line
         if saveFile:
             left_fit, right_fit = sliding_window(warped, hist, saveFile=1,
-                                                filename=out_img_dir + '/slide_' +                                                       fname.split('/')[-1])
+                                                filename=out_img_dir + '/slide_' +                                                       fname.split('/')[-1], margin=30)
         else:
-            left_fit, right_fit = sliding_window(warped, hist)
+            left_fit, right_fit = sliding_window(warped, hist, margin=30)
     else: 
         # Perform a margin search with the previous fit values
-        left_fit, right_fit = margin_search(warped, left_fit_prev, right_fit_prev, margin=40)
+        left_fit, right_fit = margin_search(warped, left_fit_prev, right_fit_prev, margin=30)
 
     # Apply smoothing
     if smoothing:
-        left_fit, right_fit = fit_mvg_avg(left_fit, right_fit, num=3, diff=4e-4)
+        left_fit, right_fit = fit_mvg_avg(left_fit, right_fit, num=5, diff=2e-4)
 
     # Get the radius of curvature for both lines
     left_curverad, right_curverad, avg_curverad = radius_of_curvature(warped, left_fit, right_fit)
