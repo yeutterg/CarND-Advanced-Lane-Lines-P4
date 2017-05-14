@@ -23,6 +23,7 @@ right_fit_hist = []
 left_fit_prev = []
 right_fit_prev = []
 
+
 """
 1. Image Transformations and Analysis
 """
@@ -32,8 +33,8 @@ def grayscale(img):
     """
     Converts a BGR image to grayscale
 
-    img: The image in BGR color format
-    return The grayscale image
+    :param img: The image in BGR color format
+    :return The grayscale image
     """
     return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
@@ -42,8 +43,8 @@ def hls(img):
     """
     Converts a BGR image to HLS
 
-    img: The image in BGR color format
-    return The HLS image
+    :param img: The image in BGR color format
+    :return The HLS image
     """
     return cv2.cvtColor(img, cv2.COLOR_BGR2HLS).astype(np.float)
 
@@ -52,9 +53,9 @@ def undistort(img, gray):
     """
     Undistorts a camera image
 
-    img: The image in color
-    gray: The image in grayscale
-    return The undistorted image
+    :param img: The image in color
+    :param gray: The image in grayscale
+    :return The undistorted image
     """
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
     return cv2.undistort(img, mtx, dist, None, mtx)
@@ -64,8 +65,8 @@ def perspective_transform(img):
     """
     Transforms the perspective of the image
 
-    img: The image to transform
-    return (warped): The warped image, (M): The transform matrix,
+    :param img: The image to transform
+    :return (warped): The warped image, (M): The transform matrix,
             (Minv): The inverse transform matrix
     """
     # Define the four source points
@@ -94,8 +95,8 @@ def histogram(img):
     """
     Gets the histogram of the bottom half of the image
 
-    img: The image
-    return The histogram
+    :param img: The image
+    :return The histogram
     """
     # Take a histogram of the bottom half of the image
     return np.sum(img[img.shape[0] // 2:, :], axis=0)
@@ -106,14 +107,14 @@ def sliding_window(img, histogram, nwindows=9, margin=100, minpix=50, saveFile=0
     Implements a sliding window search to obtain a polynomial fit
     for each lane line
 
-    img: The image
-    histogram: The histogram of light points in the image
-    nwindows: The number of sliding windows
-    margin: The width of windows +/- this margin
-    minpix: The minimum number of pixels to recenter a window
-    saveFile: Whether to save an output figure
-    filename: The name of the file if saving an output figure
-    return: (left_fit) The left polynomial, (right_fit) The right polynomial
+    :param img: The image
+    :param histogram: The histogram of light points in the image
+    :param nwindows: The number of sliding windows
+    :param margin: The width of windows +/- this margin
+    :param minpix: The minimum number of pixels to recenter a window
+    :param saveFile: Whether to save an output figure
+    :param filename: The name of the file if saving an output figure
+    :return: (left_fit) The left polynomial, (right_fit) The right polynomial
     """
     # Create an output image
     out_img = np.dstack((img, img, img)) * 255
@@ -212,13 +213,13 @@ def margin_search(img, left_fit, right_fit, margin=100, saveFile=0, filename='')
     After a successful sliding window search, just search in predefined
     margins around the previous line position
 
-    img: The image
-    left_fit: Polynomial fit of the left lane line in the previous image
-    right_fit: Polynomial fit of the right lane line in the previous image
-    margin: The width of windows +/- this margin
-    saveFile: Whether to save an output figure
-    filename: The name of the file if saving an output figure
-    return: (left_fit) The left polynomial, (right_fit) The right polynomial
+    :param img: The image
+    :param left_fit: Polynomial fit of the left lane line in the previous image
+    :param right_fit: Polynomial fit of the right lane line in the previous image
+    :param margin: The width of windows +/- this margin
+    :param saveFile: Whether to save an output figure
+    :param filename: The name of the file if saving an output figure
+    :return: (left_fit) The left polynomial, (right_fit) The right polynomial
     """
     # Create an output image
     out_img = np.dstack((img, img, img)) * 255
@@ -273,12 +274,12 @@ def radius_of_curvature(img, left_fit, right_fit):
     """
     Determines the radius of curvature, in meters, of the left and right lanes
 
-    img: The image 
-    left_fit: The left polynomial fit
-    right_fit: The right polynomial fit
-    return (left_curverad) The left line radius of curvature in meters,
-            (right_curverad) The right line radius of curvature in meters
-            (avg_curverad) The average of the left and right curves
+    :param img: The image 
+    :param left_fit: The left polynomial fit
+    :param right_fit: The right polynomial fit
+    :return: (left_curverad) The left line radius of curvature in meters,
+             (right_curverad) The right line radius of curvature in meters
+             (avg_curverad) The average of the left and right curves
     """
     # Get the radius in pixel space
     ploty = np.linspace(0, img.shape[0] - 1, img.shape[0])
@@ -342,12 +343,12 @@ def draw_lines(undist, warped, left_fit, right_fit, Minv):
     """
     Draws fit lane lines back on the original image
 
-    undist: The original (undistorted) image
-    warped: The warped image
-    left_fit: The polynomial fit for the left lane line
-    right_fit: The polynomial fit for the right lane line
-    Minv: The inverse perspective matrix
-    return The undistorted image with lane lines drawn
+    :param undist: The original (undistorted) image
+    :param warped: The warped image
+    :param left_fit: The polynomial fit for the left lane line
+    :param right_fit: The polynomial fit for the right lane line
+    :param Minv: The inverse perspective matrix
+    :return The undistorted image with lane lines drawn
     """
     # Create an image to draw the lines on
     warp_zero = np.zeros_like(warped).astype(np.uint8)
@@ -383,10 +384,10 @@ def dir_threshold(gray, sobel_kernel=3, thresh=(0, np.pi / 2)):
     Computes the direction of the gradient in both the x and y directions
     and applies a threshold as a layer mask
 
-    gray: The image to process, in grayscale
-    sobel_kernel: The Sobel kernel size
-    thres: The threshold to apply
-    return The layer mask
+    :param gray: The image to process, in grayscale
+    :param sobel_kernel: The Sobel kernel size
+    :param thres: The threshold to apply
+    :return: The layer mask
     """
     # Take the gradient in x and y separately
     sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=sobel_kernel)
@@ -412,10 +413,10 @@ def mag_thresh(gray, sobel_kernel=3, thresh=(0, 255)):
     Computes the magnitude of the gradient and applies a threshold 
     as a layer mask
 
-    gray: The image to process, in grayscale
-    sobel_kernel: The Sobel kernel size
-    thres: The threshold to apply
-    return The layer mask
+    :param gray: The image to process, in grayscale
+    :param sobel_kernel: The Sobel kernel size
+    :param thres: The threshold to apply
+    :return: The layer mask
     """
     # Take the gradient in x and y separately
     sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=sobel_kernel)
@@ -442,11 +443,11 @@ def abs_sobel_thresh(gray, orient='x', thresh=(0, 255), sobel_kernel=3):
     Computes the absolute value of Sobel in the x or y direction
     and applies a threshold as a layer mask
 
-    gray: The image to process, in grayscale
-    orient: The orientation, either 'x' or 'y'
-    sobel_kernel: The Sobel kernel size
-    thres: The threshold to apply
-    return The layer mask
+    :param gray: The image to process, in grayscale
+    :param orient: The orientation, either 'x' or 'y'
+    :param sobel_kernel: The Sobel kernel size
+    :param thres: The threshold to apply
+    :return: The layer mask
     """
     # Take the derivative in x or y given orient = 'x' or 'y'
     sobel = cv2.Sobel(gray, cv2.CV_64F, orient == 'x', orient == 'y')
@@ -470,9 +471,9 @@ def saturation_thresh(img, thresh=(0, 255)):
     """
     Computes the threshold of the saturation of the image
 
-    img: The image to process, in BGR
-    thres: The threshold to apply
-    return The layer mask
+    :param img: The image to process, in BGR
+    :param thres: The threshold to apply
+    :return: The layer mask
     """
     # Convert the image to HLS format
     hlsimg = hls(img)
@@ -488,33 +489,6 @@ def saturation_thresh(img, thresh=(0, 255)):
     return binary
 
 
-# def threshold(undist):
-#     """ 
-    
-#     """
-#     # Copy the image
-#     img = np.copy(undist)
-
-#     # Convert to HLS
-#     hlsimg = hls(img)
-
-#     # Define the white color mask
-#     white_min = np.array([0, 210, 0], dtype=np.uint8)
-#     white_max = np.array([255, 255, 255], dtype=np.uint8)
-#     mask_white = cv2.inRange(hlsimg, white_min, white_max)
-
-#     # Define the yellow color mask
-#     yellow_min = np.array([18, 0, 100], dtype=np.uint8)
-#     yellow_max = np.array([30, 220, 255], dtype=np.uint8)
-#     mask_yellow = cv2.inRange(hlsimg, yellow_min, yellow_max)
-
-#     # Apply magnitude, direction, and saturation thresholds
-
-#     # Generate the combined function
-#     combined = np.zeros_like(mask_white)
-
-
-
 """
 3. Data Processing
 """
@@ -524,12 +498,12 @@ def calibrate_chessboard(xdim=9, ydim=6, drawCorners=0, saveFile=0):
     """
     Calibrates chessboard images by correcting lens distortions
 
-    xdim: The number of corners in the x axis
-    ydim: The number of corners in the y axis
-    drawCorners: Boolean. If true, draws detected corners on image
-    saveFile: Boolean. If true, saves a comparison of the original and 
+    :param xdim: The number of corners in the x axis
+    :param ydim: The number of corners in the y axis
+    :param drawCorners: Boolean. If true, draws detected corners on image
+    :param saveFile: Boolean. If true, saves a comparison of the original and 
               undistorted image
-    return An array of calibrated images and the warping source array
+    :return: An array of calibrated images and the warping source array
     """
     out = []  # Output images
 
@@ -585,8 +559,16 @@ def calibrate_chessboard(xdim=9, ydim=6, drawCorners=0, saveFile=0):
 # For calibrateChessboard function demonstration, saves output with lines
 # calibrate_chessboard(drawCorners=1, saveFile=1) 
 
+
 def fit_mvg_avg(left_fit, right_fit, num=5, diff=1e-3):
     """
+    Averages the previous few frames of the video and eliminates outliers
+
+    :param left_fit: The new left polynomial fit
+    :param right_fit: The new right polynomial fit
+    :param num: The number of frames to average
+    :param diff: The difference between the previous frame below which to keep outliers
+    :return: (left_fit_prev) The stored left fit, (right_fit_prev) The stored right fit
     """
     global left_fit_prev, right_fit_prev
 
@@ -624,14 +606,14 @@ def img_process_pipeline(img, ksize=3, saveFile=0, fname='', smoothing=1):
     """
     The pipeline for image processing
 
-    img: The image to process
-    ksize: The kernel size
-    src: The source array of detected corners from the calibration step
-    saveFile: Boolean: If true, saves the image at various steps along
+    :param img: The image to process
+    :param ksize: The kernel size
+    :param src: The source array of detected corners from the calibration step
+    :param saveFile: Boolean: If true, saves the image at various steps along
               the pipeline
-    fname: Optional filename parameter, req if saveFile is True
-    smoothing: Turn smoothing (moving average) on or off 
-    return (new_img) The processed image
+    :param fname: Optional filename parameter, req if saveFile is True
+    :param smoothing: Turn smoothing (moving average) on or off 
+    :return: (new_img) The processed image
     """
     # Copy the image
     new_img = np.copy(img)
@@ -651,29 +633,12 @@ def img_process_pipeline(img, ksize=3, saveFile=0, fname='', smoothing=1):
         plt.subplots_adjust(left=0., right=1, top=0.9, bottom=0.)
         plt.savefig(out_img_dir + '/undist_' + fname.split('/')[-1])
 
-
-
     # Apply each of the thresholding functions
-    # gradx = abs_sobel_thresh(gray, orient='x', sobel_kernel=ksize, thresh=(20, 100)) # (20, 100), (230,255)
-    # grady = abs_sobel_thresh(gray, orient='y', sobel_kernel=ksize, thresh=(20, 100)) # (20, 100)
-    # mag_binary = mag_thresh(gray, sobel_kernel=ksize, thresh=(30, 100)) #old (30, 100)
-    # dir_binary = dir_threshold(gray, sobel_kernel=ksize, thresh=(0.7, 1.3))  # (0.7,1.3)
-    # sat_binary = saturation_thresh(undist, thresh=(200, 255))  # old (200, 255), (180, 255)
-    # gradx = abs_sobel_thresh(gray, orient='x', sobel_kernel=ksize, thresh=(120, 254))  # (20, 100), (230,255)
-    # grady = abs_sobel_thresh(gray, orient='y', sobel_kernel=ksize, thresh=(0, 255))  # (20, 100)
-    # mag_binary = mag_thresh(gray, sobel_kernel=ksize, thresh=(245, 254))  # old (30, 100), (220,255)
-    # dir_binary = dir_threshold(gray, sobel_kernel=ksize, thresh=(1.8, 2.5))  # (0.7,1.3)
-    # sat_binary = saturation_thresh(undist, thresh=(180, 255))  # old (200, 255), (180, 255)
-    gradx = abs_sobel_thresh(gray, orient='x', sobel_kernel=ksize, thresh=(120, 255)) # (20, 100), (230,255)
-    grady = abs_sobel_thresh(gray, orient='y', sobel_kernel=ksize, thresh=(20, 100)) # (20, 100)
-    mag_binary = mag_thresh(gray, sobel_kernel=ksize, thresh=(30, 100)) #old (30, 100)
-    dir_binary = dir_threshold(gray, sobel_kernel=ksize, thresh=(0.7, 1.3))  # (0.7,1.3)
-    sat_binary = saturation_thresh(undist, thresh=(200, 255))  # old (200, 255), (180, 255)
-
-    # 17-05-11 22:46 changed dir binary to 1.8, 2.5
-    # 17-05-12 06:57 Changed gradx to 120, 255, dir binary back to 0.7, 1.3
-    # 17-05-12 07:52 changed mag_binary to 230, 254
-    # 17-05-12 08:23 changed mag_binary back to 30, 100
+    gradx = abs_sobel_thresh(gray, orient='x', sobel_kernel=ksize, thresh=(120, 255))
+    grady = abs_sobel_thresh(gray, orient='y', sobel_kernel=ksize, thresh=(20, 100))
+    mag_binary = mag_thresh(gray, sobel_kernel=ksize, thresh=(30, 100))
+    dir_binary = dir_threshold(gray, sobel_kernel=ksize, thresh=(0.7, 1.3))
+    sat_binary = saturation_thresh(undist, thresh=(200, 255))
 
     # Combine the thresholding results
     combined = np.zeros_like(dir_binary)
@@ -759,14 +724,12 @@ def process_video(inFileName, outFileName):
     """
     Run the pipeline on a video
 
-    :inFileName: The video file to process
+    :param inFileName: The video file to process
     :outFileName: The file to store the output video
-    :return:
     """
     movie = VideoFileClip(inFileName)
     movie_processed = movie.fl_image(img_process_pipeline)
     movie_processed.write_videofile(outFileName, audio=False)
-
 
 
 def test():
@@ -787,7 +750,7 @@ def main(fileName):
     """
     The main project pipeline
 
-    :fileName: The video to process
+    :param fileName: The video to process
     """
     # Calibrate the camera lens using chessboard images
     calibrate_chessboard()
@@ -796,6 +759,6 @@ def main(fileName):
     process_video(fileName, out_img_dir + '/out_' + fileName.split('/')[-1])
 
 
-# test()
-main('./project_video.mp4')
+test()
+# main('./project_video.mp4')
 # main('./challenge_video.mp4')
