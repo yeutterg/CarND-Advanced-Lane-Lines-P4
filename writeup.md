@@ -72,8 +72,11 @@ Then, for each image:
 * Apply color and gradient thresholds
 * Warp the perspective to a bird's-eye view of the lane
 * Find the lane line boundaries with a histogram and sliding window search
+  (or margin search in subsequent images)
 * Fit the lane lines with a second-order polynomial
-* Compute the radius of curvature 
+* Apply smoothing with a moving average of previous images
+* Eliminate outliers above a specified threshold
+* Compute the radius of curvature and sitance from the center
 * Plot the area within the lane lines back on the undistorted image
 
 
@@ -88,6 +91,8 @@ The `undistort()` function is applied to the test image, using the calibration d
 I used a combination of color and gradient thresholds to generate a binary image (thresholding steps after `# Combine the thresholding results` in `img_process_pipeline()`).  Here's an example of my output for this step:
 
 ![alt text][combinedtest]
+
+Some parameter tweaking was required in this step to achieve good performance on both single images and a video feed.
 
 #### 3. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.
 
@@ -117,6 +122,8 @@ Then, I implemented a sliding window search to get a polynomial fit for each lan
 
 ![alt text][polyfittest]
 
+In a video feed, subsequent images are computed with a simpler margin search.
+
 #### 5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
 
 A function, `radius_of_curvature()`, was defined to calculate the radius of curvature of the polynomial fit lines. This function first calculates the radius of curvature in pixel space, then converts it to "real world" space in meters.
@@ -124,10 +131,12 @@ A function, `radius_of_curvature()`, was defined to calculate the radius of curv
 For the example image, the radius of curvature was calculated as:
 
 ```
-left: 261.037646339 m, right: 321.782499731 m
+left: 240.760486473 m, right: 443.351188132 m, avg: 342.055837302 m
 ```
 
 This result seems to be a reasonable real-world value based on the U.S. government specifications for highway curvature.
+
+The function `distance_from_center()` computes the distance and position from the center.
 
 #### 6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
 
@@ -135,7 +144,7 @@ I implemented redrawing onto the undistorted image in the function `draw_lines()
 
 ![alt text][newimgtest1]
 
-This also appears to work perfectly on the other 5 test images:
+This also appears to work well on the other 5 test images:
 
 ![alt text][newimgtest2]
 ![alt text][newimgtest3]
@@ -149,7 +158,7 @@ This also appears to work perfectly on the other 5 test images:
 
 #### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (wobbly lines are ok but no catastrophic failures that would cause the car to drive off the road!).
 
-The pipeline performs well as-is. There are some minor wobbles on the concrete sections of the road, but otherwise it accurately identifies the area inside the lane lines.
+The pipeline performs well as described. There are some minor wobbles on the concrete sections of the road (which were reduced with smoothing and outlier elimination), but otherwise it accurately identifies the area inside the lane lines.
 
 Here's a [link to my video result](./output_images/out_project_video.mp4)
 
@@ -161,6 +170,6 @@ Here's a [link to my video result](./output_images/out_project_video.mp4)
 
 In developing this project, I worked with a single test image to develop the processing pipeline. Once I was happy with the result at each step, I proceeded to implement the next step. I did not test each stage of the pipeline on all the test images. In hindsight, it would have been better to test various images at each stage of the pipeline for robustness. However, the pipeline worked perfectly on all test images.
 
-Looking at the [project_video.mp4 result](./output_images/out_project_video.mp4), there was some wobbliness on the concrete sections. This was also apparent in the [challenge video](./output_images/out_challenge_video.mp4), where the road surface appears lighter. This is likely due to the reduced contrast between lane lines and the color of the road surface. Setting different thresholds and averaging the previous few frames could prevent this type of error in the future.
+However, the video was a different story. Normal sections tended to work well, but lighter areas (concrete, shadows, etc.) caused the detection to err significantly. This is likely due to the reduced contrast between lane lines and the color of the road surface. A lot of effort was used setting different thresholds, averaging the previous few frames, and eliminating outliers.
 
 To make the pipeline even more robust, I would test on vastly different road surfaces (e.g. different materials, roads with painted markings in the lane, etc.). This would likely increase the complexity of the pipeline.
