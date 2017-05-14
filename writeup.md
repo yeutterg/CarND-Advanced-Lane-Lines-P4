@@ -160,7 +160,7 @@ This also appears to work well on the other 5 test images:
 
 The pipeline performs well as described. There are some minor wobbles on the concrete sections of the road (which were reduced with smoothing and outlier elimination), but otherwise it accurately identifies the area inside the lane lines.
 
-Here's a [link to my video result](./output_images/out_project_video.mp4)
+Here's a [link to my video result](https://youtu.be/Vlvl8yt6HJY)
 
 ---
 
